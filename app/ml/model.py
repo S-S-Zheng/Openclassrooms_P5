@@ -3,6 +3,7 @@ Charge le modèle catboost optimisé pré-entrainé et gère ses commandes
 '''
 
 import numpy as np
+import pandas as pd
 from pathlib import Path
 from typing import List, Tuple
 import logging # sert a la gestion de logs de python
@@ -133,10 +134,11 @@ class MLModel:
         
     def explain_global(
         self,
-        features: List[float]
-        ):
+        features: pd.DataFrame | np.ndarray
+        ) -> None:
         '''
         Réalise une beeswarm et scatter plot générale des features
+        features : DataFrame ou ndarray (n_samples, n_features)
         '''
         
         if self.model is None:
@@ -145,25 +147,29 @@ class MLModel:
         if not self.features_names:
             raise ValueError("Liste des features non définie")
         
-        # Reshape de la liste features (1D) en array 2D (1, n_features)(ie tableau numpy)
-        features_array = np.array(features).reshape(1, -1)
+        if isinstance(features, np.ndarray):
+            features = pd.DataFrame(features, columns=self.features_names)
+        
         
         # Beeswarm
-        shap_values_global = self.explainer_global(features_array)
+        shap_values_global = self.explainer_global(features)
         
-        shap.summary_plot(shap_values_global,features_array)
+        shap.summary_plot(shap_values_global,features)
         
         for feature in self.features_names:
-            shap.plots.scatter(shap_values_global[:, feature])
+            shap.plots.scatter(shap_values_global[:, feature],features[feature])
         
     def explain_local(
         self,
-        features: List[float],
+        features: List[float] | np.ndarray,
         i: int = 0,
         max_display: int = 5
         ):
         '''
         Réalise une beeswarm et scatter plot générale des features
+        features : Liste des features (1D) ou ndarray (1, n_features)
+        i : index de l'observation à expliquer
+        max_display: nombre max de features a afficher dans le waterfall
         '''
         
         if self.model is None:
@@ -173,19 +179,14 @@ class MLModel:
             raise ValueError("Liste des features non définie")
         
         # Reshape de la liste features (1D) en array 2D (1, n_features)(ie tableau numpy)
-        features_array = np.array(features).reshape(1, -1)
+        features = np.array(features).reshape(1, -1)
         
         # Waterfall
-        shap_values_local = self.explainer_local(features_array)
-        
+        shap_values_local = self.explainer_local(features)
         shap.plots.waterfall(
             shap_values_local[i],
             max_display = max_display
         )
-        
-        for feature in self.features_names:
-            shap.plots.scatter(shap_values_local[:, feature])
-    
     
 
 
