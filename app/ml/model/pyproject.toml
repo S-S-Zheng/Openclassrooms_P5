@@ -1,0 +1,32 @@
+[project]
+name = "livrable-p4"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "notebook (>=7.4.7,<8.0.0)",
+    "ipykernel (>=7.1.0,<8.0.0)",
+    "pandas (>=2.3.3,<3.0.0)",
+    "numpy (>=2.3.4,<3.0.0)",
+    "seaborn (>=0.13.2,<0.14.0)",
+    "matplotlib (>=3.10.7,<4.0.0)",
+    "scikit-learn (>=1.7.2,<2.0.0)",
+    "shap (>=0.50.0,<0.51.0)",
+    "bentoml (>=1.4.28,<2.0.0)",
+    "polars (>=1.35.2,<2.0.0)",
+    "statsmodels (>=0.14.5,<0.15.0)",
+    "ipywidgets (>=8.1.8,<9.0.0)",
+    "catboost (>=1.2.8,<2.0.0)",
+    "imblearn (>=0.0,<0.1)"
+]
+
+[tool.poetry]
+packages = [{include = "livrable_p4", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

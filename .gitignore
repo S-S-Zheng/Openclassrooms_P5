@@ -51,3 +51,5 @@ model/**/Heat*
 model/**/__pycache__/
 model/**/catboost_info/
 
+# Pytest
+.pytest*
