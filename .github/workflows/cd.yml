@@ -1,0 +1,52 @@
+# CD pour déploiement auto du code validé vers Hugging Face Spaces
+# S'éxé après CI validée seulement sur main
+---
+name: CD Pipeline
+
+# Déclencheurs
+# Lance le workflow seulement si succès du workflow CI
+on:
+  workflow_run:
+    workflows: ["ci"]
+    types:
+      - completed
+
+# Variables d'environnement globales
+env:
+  PYTHON_VERSION: '3.13'
+
+# Jobs
+jobs:
+  # job de déploiement
+  deploy:
+    name: Deploy to Hugging Face Spaces
+    runs-on: ubuntu-latest
+    # Le déploiement ne se fait que si ci est un succès et sur la branche main
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        # Clone tout l'historique du dépôt
+        with:
+          fetch-depth: 0
+      - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+          HF_USERNAME: ${{ secrets.HUGGINGFACE_USERNAME }}
+          HF_SPACE_NAME: ${{ secrets.HUGGINGFACE_SPACE_NAME }}
+        # Configure git et pousse le code vers HFSpaces
+        # mail et user obligatoires pour github, emploie valeurs génériques
+        # Ajout remote HF, authentification via token (CI non interactive)
+        # --force nécessaire car l'historique HF est indépendant du dépôt GitHub
+        run: |
+          git config --global user.email "ci@github-actions.com"
+          git config --global user.name "GitHub Actions"
+          git remote add hf https://${HUGGINGFACE_USERNAME}:${HUGGINGFACE_TOKEN}@huggingface.co/spaces/${HUGGINGFACE_USERNAME}/${HUGGINGFACE_SPACE_NAME}
+          git push hf main --force
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "Déploiement réussi sur Hugging Face Spaces"
+          echo "URL: https://huggingface.co/spaces/${HUGGINGFACE_USERNAME}/${HUGGINGFACE_SPACE_NAME}"
