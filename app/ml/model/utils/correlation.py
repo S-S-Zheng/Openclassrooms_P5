@@ -8,11 +8,7 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 # Heatmap
 def graphs_corr(
-    data: pd.DataFrame,
-    vmin: float,
-    vmax: float,
-    title_save="Heatmap",
-    save=False
+    data: pd.DataFrame, vmin: float, vmax: float, title_save="Heatmap", save=False
 ) -> plt.Figure:
     """
     data: dataframe du tableau de contingence\n
@@ -31,20 +27,10 @@ def graphs_corr(
 
     col_flag = "Total" in data.columns[-1]
 
-    data2 = data.iloc[
-        : -1 if row_flag else None,
-        : -1 if col_flag else None
-        ]
+    data2 = data.iloc[: -1 if row_flag else None, : -1 if col_flag else None]
 
     # Met en place la figure
-    fig, ax = plt.subplots(
-        2,
-        1,
-        figsize=(16, 16),
-        sharex=True,
-        sharey=True,
-        clear=True
-        )
+    fig, ax = plt.subplots(2, 1, figsize=(16, 16), sharex=True, sharey=True, clear=True)
 
     # Liste des méthodes de correlation
     corr_method = ["pearson", "spearman"]
@@ -73,9 +59,7 @@ def graphs_corr(
 
         # ax[i].set_xlabel()
         # ax[i].set_ylabel()
-        ax[i].set_title(
-            f"Heatmap suivant correlation de {meth} (val abs)", fontsize=12
-        )
+        ax[i].set_title(f"Heatmap suivant correlation de {meth} (val abs)", fontsize=12)
 
         # Modification des ticks pour rendre la figure globale plus lisible
         ax[i].tick_params(
@@ -103,12 +87,7 @@ def graphs_corr(
     # plt.xticks(ha='right')
     plt.tight_layout()
     if save:
-        plt.savefig(
-            fname=title_save,
-            dpi=300,
-            format="png",
-            bbox_inches="tight"
-            )
+        plt.savefig(fname=title_save, dpi=300, format="png", bbox_inches="tight")
     plt.show()
 
 
@@ -118,11 +97,7 @@ def graphs_corr(
 
 
 # # Construit un dataframe répertoriant les couples corrélés
-def CorrCouples_VIF(
-    data: pd.DataFrame,
-    vmin=0.7,
-    vif_max=10
-) -> pd.DataFrame:
+def CorrCouples_VIF(data: pd.DataFrame, vmin=0.7, vif_max=10) -> pd.DataFrame:
     """
     Etudie la correlation suivant la méthodede de pearson et spearman
     d'un dataframe et dresse 3 dataframes qui récapitule les couples,
@@ -191,10 +166,7 @@ def CorrCouples_VIF(
         variance_inflation_factor(df_data.values, i)
         for i in range(len(df_data.columns))
     ]
-    df_vif = df_vif[df_vif["VIF"] > vif_max].sort_values(
-        by="VIF",
-        ascending=False
-        )
+    df_vif = df_vif[df_vif["VIF"] > vif_max].sort_values(by="VIF", ascending=False)
 
     return corr_df_pearson, corr_df_spearman, df_vif
 
@@ -225,9 +197,7 @@ def chi2_test(data: pd.DataFrame, cat_list: list, alpha=0.05):
             # resultats du test
             results_chi2 = chi2_contingency(table)
 
-            print(
-                f"=Résultats pour le couple {col} et {chi2_list_featEng[i]}="
-            )
+            print(f"=Résultats pour le couple {col} et {chi2_list_featEng[i]}=")
             print(f"stat de test: {results_chi2[0]}")
             print(f"p-value: {results_chi2[1]}")
             print(f"degré de liberté: {results_chi2[2]}")
@@ -266,18 +236,13 @@ def anova_test(data: pd.DataFrame, target: None, cat_list: list, alpha=0.05):
     # Variable catégorielle
     for cat in anova_list_featEng:
         category = [
-            data.loc[
-                data[cat] == group, target
-            ]
-            for group in data[cat].unique()
+            data.loc[data[cat] == group, target] for group in data[cat].unique()
         ]
 
         # resultats du test
         results_anova = f_oneway(*category)
 
-        print(
-            f"==========Résultats pour le couple {cat} et {target}========="
-        )
+        print(f"==========Résultats pour le couple {cat} et {target}=========")
         print(f"stat de test: {results_anova[0]}")
         print(f"p-value: {results_anova[1]}")
 

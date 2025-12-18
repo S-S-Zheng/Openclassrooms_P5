@@ -71,9 +71,7 @@ def make_figure(
                 ax.set_yscale("log")
 
         elif kind == "box":
-            if (
-                x
-            ):  # Compar catégories d'une feat par rapport aux autres feat
+            if x:  # Compar catégories d'une feat par rapport aux autres feat
                 sns.boxplot(
                     data=data,
                     x=x,  # Catégories de la feature de réf
@@ -122,7 +120,7 @@ def make_figure(
             ax.set_ylabel(ind)
 
     # Suppression axes vides
-    for ax in axes[len(ycols):]:
+    for ax in axes[len(ycols) :]:
         fig.delaxes(ax)
 
     fig.tight_layout()
@@ -194,11 +192,7 @@ def graphs(
     if plot != "pair":
         for kind in to_do:
             figs[kind] = make_figure(
-                data=data2,
-                x=x,
-                kind=kind,
-                ycols=plot_map.get(kind),
-                scale=scale
+                data=data2, x=x, kind=kind, ycols=plot_map.get(kind), scale=scale
             )
 
     # ============================ Graphique pairplot
@@ -216,10 +210,7 @@ def graphs(
             data=data_pair,
             hue=pairplot_hue,
             kind=pairplot_kind,
-            diag_kind=(
-                pairplot_diag_kind if pairplot_diag_kind != "auto"
-                else "kde"
-            ),
+            diag_kind=(pairplot_diag_kind if pairplot_diag_kind != "auto" else "kde"),
         )
         figs["pairplot"] = g.fig
 
@@ -274,19 +265,14 @@ def graph_hyperParamEffect(
         if hyperparam.startswith(params_prefix)
     ]
     metric_cols = [
-        metric for metric in results.columns if metric.startswith(
-            metrics_prefixe
-        )
+        metric for metric in results.columns if metric.startswith(metrics_prefixe)
     ]
 
     n_metrics = len(metric_cols)
     n_params = len(param_cols)
 
     fig, axes = plt.subplots(
-        n_metrics,
-        n_params,
-        figsize=(6 * n_params, 4 * n_metrics),
-        squeeze=False
+        n_metrics, n_params, figsize=(6 * n_params, 4 * n_metrics), squeeze=False
     )  # squeeze False pour garder 2D sur l'axe
 
     for i, metric in enumerate(metric_cols):
@@ -294,10 +280,7 @@ def graph_hyperParamEffect(
             ax = axes[i, j]
             param_name = param.replace(params_prefix, "")
             if model_type == "regression":
-                metric_values = (
-                    results[metric] if "R2" in metric
-                    else -results[metric]
-                )
+                metric_values = results[metric] if "R2" in metric else -results[metric]
             else:
                 metric_values = results[metric]
             sns.lineplot(
@@ -358,16 +341,15 @@ def graph_importance(
                     "modele"
                 ].get_feature_names_out(),  # preproc.get_feature_names_out()
             ).sort_values(ascending=False)
-        except:
+        except Exception as e:
+            print("Erreur:", e, "\nUtilisation méthode alternative")
             # get_feature_names_out() ne fonctionne pas
             # car FunctionTransformer n'a pas cette méthode donc alternative:
             # Récupération des noms de variables catégorielles encodées
             cat_encoder = preproc.named_transformers_["cat"]
-            encoded_cat_features = \
-                cat_encoder.get_feature_names_out(non_numeric_list)
+            encoded_cat_features = cat_encoder.get_feature_names_out(non_numeric_list)
             # Fusion avec les numériques
-            feature_names = \
-                np.concatenate([numeric_list, encoded_cat_features])
+            feature_names = np.concatenate([numeric_list, encoded_cat_features])
             #######################
             importances = pd.Series(
                 regressor.feature_importances_,
@@ -375,16 +357,11 @@ def graph_importance(
             ).sort_values(ascending=False)
     else:
         results = permutation_importance(
-            model,
-            X,
-            y,
-            n_repeats=n_repeats,
-            random_state=random_state,
-            scoring=scoring
+            model, X, y, n_repeats=n_repeats, random_state=random_state, scoring=scoring
         )
-        importances = pd.Series(
-            results.importances_mean, index=X.columns
-        ).sort_values(ascending=False)
+        importances = pd.Series(results.importances_mean, index=X.columns).sort_values(
+            ascending=False
+        )
 
     plt.figure(figsize=(6, 8))
     sns.barplot(x=importances.values, y=importances.index)
@@ -442,10 +419,7 @@ def catboost_graphs(X: list, best_model, pool=None):
         )
 
         df_perm_importance = pd.DataFrame(
-            {
-                "Features": X.columns,
-                "Permutation importance": permutation_importance
-            }
+            {"Features": X.columns, "Permutation importance": permutation_importance}
         ).sort_values("Permutation importance", ascending=False)
 
     return df_feat_importance, df_perm_importance

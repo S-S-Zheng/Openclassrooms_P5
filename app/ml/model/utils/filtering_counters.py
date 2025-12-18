@@ -7,17 +7,12 @@ def cleaning_counter(**kwargs) -> dict:
 
 
 # Liste les colonnes absentent de la dataframe before
-def removedAndAdded_col(
-    df_before: pd.DataFrame,
-    df_after: pd.DataFrame
-) -> list:
+def removedAndAdded_col(df_before: pd.DataFrame, df_after: pd.DataFrame) -> list:
 
     removed_col_list = df_before.loc[
         :, ~df_before.columns.isin(df_after)
     ].columns.tolist()
-    added_col_list = df_after.loc[:, ~df_after.columns.isin(
-        df_before
-        )].columns.tolist()
+    added_col_list = df_after.loc[:, ~df_after.columns.isin(df_before)].columns.tolist()
 
     return removed_col_list, added_col_list
 

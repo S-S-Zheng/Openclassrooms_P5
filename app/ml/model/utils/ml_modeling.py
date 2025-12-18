@@ -1,14 +1,18 @@
 import numpy as np
 import pandas as pd
+
 # from imblearn.over_sampling import SMOTE
 # Remplace la pipeline de sklearn,
 # nécéssaire car SMOTE n'a pas de fit_transform mais fit_resample()
 from imblearn.pipeline import Pipeline
+
 # from imblearn.under_sampling import RandomUnderSampler
 # from sklearn.pipeline import Pipeline#, make_pipeline
 from sklearn.calibration import CalibratedClassifierCV
+
 # Preprocess
 from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
+
 # Metrics
 # from sklearn.metrics import (
 #     ConfusionMatrixDisplay, PrecisionRecallDisplay, RocCurveDisplay,
@@ -17,23 +21,20 @@ from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 #     recall_score, roc_auc_score, roc_curve
 # )
 # Selection
-from sklearn.model_selection import (
+from sklearn.model_selection import (  # cross_val_predict,; train_test_split
     GridSearchCV,
     KFold,
     StratifiedShuffleSplit,
-    # cross_val_predict,
     cross_validate,
-    # train_test_split
 )
-from sklearn.preprocessing import (
+from sklearn.preprocessing import (  # RobustScaler,; StandardScaler
     FunctionTransformer,
     LabelBinarizer,
     LabelEncoder,
     OneHotEncoder,
     PowerTransformer,
-    # RobustScaler,
-    # StandardScaler
 )
+
 # mean_squared_error, r2_score, mean_absolute_error,
 # mean_absolute_percentage_error, root_mean_squared_error
 # from misc import features_types
@@ -44,11 +45,7 @@ from sklearn.preprocessing import (
 
 
 def Xy_tf(
-    scaler_tf=None,
-    logX_tf=False,
-    logy_tf=False,
-    log_method="Box-Cox",
-    y_tf=False
+    scaler_tf=None, logX_tf=False, logy_tf=False, log_method="Box-Cox", y_tf=False
 ):
     """
     Initie les transformations à apporter ux prédicteurs et cible.
@@ -75,8 +72,7 @@ def Xy_tf(
     logarithmX = (
         PowerTransformer(method=log_method) if logX_tf else "passthrough"
     )  # Fonctionne normalement avec get_names_out de feature_importance
-    logarithmy = PowerTransformer(
-        method=log_method) if logy_tf else "passthrough"
+    logarithmy = PowerTransformer(method=log_method) if logy_tf else "passthrough"
 
     # Transformation sur X
     num_tf = Pipeline([("log", logarithmX), ("scaler", scaler_tf)])
@@ -84,10 +80,7 @@ def Xy_tf(
     # Transformation sur y
     # Transformation de y: on log puis standardise
     y_tf = (
-        Pipeline([
-            ("log", logarithmy),
-            ("scaler", scaler_tf)
-        ]) if y_tf else None
+        Pipeline([("log", logarithmy), ("scaler", scaler_tf)]) if y_tf else None
     )  # Si pas de transformation a apportée a y
 
     return num_tf, y_tf
@@ -154,9 +147,7 @@ def preproc(
                     (cat_name, encoding[encoding_key], cat_listing)
                 )
         else:
-            transformers_sparse.append(
-                ("cat", next(iter(encoding.values())), cat_list)
-            )
+            transformers_sparse.append(("cat", next(iter(encoding.values())), cat_list))
 
         ct_sparse_full = ColumnTransformer(transformers_sparse)
     else:
@@ -226,11 +217,7 @@ def Xy_folds(
     results = []
 
     methods = {
-        "kfold": KFold(
-            n_splits=n_splits,
-            shuffle=shuffle,
-            random_state=random_state
-        ),
+        "kfold": KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state),
         "strat": StratifiedShuffleSplit(
             n_splits=n_splits,
             test_size=test_size,
@@ -239,9 +226,7 @@ def Xy_folds(
         ),
     }
 
-    for n, (train_index, test_index) in enumerate(
-        methods[method].split(X, y)
-    ):
+    for n, (train_index, test_index) in enumerate(methods[method].split(X, y)):
         X_train, X_test, y_train, y_test = (
             X.iloc[train_index],
             X.iloc[test_index],
@@ -441,10 +426,7 @@ def reg_modeling_cv(
         ct = ct_dense_full if name.lower() == "svr" else ct_sparse_full
 
         # Transform sur y (transf y, entraine puis inverse la transformation)
-        model = TransformedTargetRegressor(
-            regressor=regressor,
-            transformer=y_tf
-        )
+        model = TransformedTargetRegressor(regressor=regressor, transformer=y_tf)
 
         pipe_full = Pipeline([("preprocessing", ct), ("modele", model)])
 
@@ -465,12 +447,10 @@ def reg_modeling_cv(
             mean_score_train = np.mean(scores_full[f"train_{metric_name}"])
             mean_score_test = np.mean(scores_full[f"test_{metric_name}"])
             result[f"{metric_nickname}_train"] = (
-                -mean_score_train if "neg_" in metric_name
-                else mean_score_train
+                -mean_score_train if "neg_" in metric_name else mean_score_train
             )
             result[f"{metric_nickname}_test"] = (
-                -mean_score_test if "neg_" in metric_name
-                else mean_score_test
+                -mean_score_test if "neg_" in metric_name else mean_score_test
             )
         results_full_list.append(result)
 
@@ -500,11 +480,7 @@ def cat_modeling_cv(
     scaler_tf=None,
     cat_tf=None,
     y_tf: bool = False,
-    scoring: dict = {
-        "accu": "accuracy",
-        "prec": "precision",
-        "recall": "recall"
-    },
+    scoring: dict = {"accu": "accuracy", "prec": "precision", "recall": "recall"},
     random_state=42,
     cv=5,
     show=False,
@@ -593,10 +569,7 @@ def cat_modeling_cv(
 
         # Transformation de y si y_tf activé
         if y_tf:
-            model = TransformedTargetRegressor(
-                regressor=classifier,
-                transformer=y_tf
-            )
+            model = TransformedTargetRegressor(regressor=classifier, transformer=y_tf)
         else:
             model = classifier
 
@@ -816,8 +789,10 @@ def cat_modeling_cv_predict(
     results_full: Dataframe des résultats\n
     show: Affiche les résultats. Par défaut False)
     """
-    from sklearn.model_selection import \
-        cross_val_predict  # Ne fonctionne pas en import globale
+    from sklearn.model_selection import (
+        cross_val_predict,  # Ne fonctionne pas en import globale
+    )
+
     # Transformation X et y
     num_tf, y_tf = Xy_tf(
         scaler_tf=scaler_tf,
@@ -861,10 +836,7 @@ def cat_modeling_cv_predict(
 
         # Transformation de y si y_tf activé
         if y_tf:
-            model = TransformedTargetRegressor(
-                regressor=classifier,
-                transformer=y_tf
-            )
+            model = TransformedTargetRegressor(regressor=classifier, transformer=y_tf)
         else:
             model = classifier
 
@@ -883,9 +855,7 @@ def cat_modeling_cv_predict(
         result = {
             "Modele": name,
             "y_pred_proba": predict_proba,
-            "y_pred": (
-                predict_proba[:, 1] >= class_threshold
-            ).astype("int64"),
+            "y_pred": (predict_proba[:, 1] >= class_threshold).astype("int64"),
         }
         results_full_list.append(result)
 

@@ -56,9 +56,7 @@ class MLModel:
 
         # Charge la liste des features
         if not self.features_names_path.exists():
-            logger.error(
-                f"Fichier features absent: {self.features_names_path}"
-            )
+            logger.error(f"Fichier features absent: {self.features_names_path}")
             return
         with open(self.features_names_path, "rb") as fn:
             self.features_names = pickle.load(fn)
@@ -77,10 +75,7 @@ class MLModel:
         self.explainer_local = shap.TreeExplainer(self.model)
         logger.info("Explainer SHAP chargé")
 
-    def predict(
-        self,
-        features: List[float]
-    ) -> Tuple[float, float, str]:
+    def predict(self, features: List[float]) -> Tuple[float, float, str]:
         """
         Réalise une prédiction
 
@@ -94,9 +89,7 @@ class MLModel:
             raise ValueError("Modèle non chargé")
 
         if self.features_names and len(features) != len(self.features_names):
-            raise ValueError(
-                f"Nb features diff de {len(self.features_names)}"
-            )
+            raise ValueError(f"Nb features diff de {len(self.features_names)}")
 
         # Reshape liste features 1D en array 2D (1, n_features)
         features_array = np.array(features).reshape(1, -1)
@@ -116,10 +109,7 @@ class MLModel:
 
         return prediction_value, confidence, class_name
 
-    def get_feature_importance(
-        self,
-        top_n: int = 5
-    ) -> List[Tuple[str, float]]:
+    def get_feature_importance(self, top_n: int = 5) -> List[Tuple[str, float]]:
         """
         Retourne les top_n features les plus influentes
         """
@@ -134,17 +124,12 @@ class MLModel:
         importances_dict = dict(zip(self.features_names, importances))
 
         top_features = sorted(
-            importances_dict.items(),
-            key=lambda item: abs(item[1]),
-            reverse=True
+            importances_dict.items(), key=lambda item: abs(item[1]), reverse=True
         )
 
         return top_features[:top_n]
 
-    def explain_global(
-        self,
-        features: pd.DataFrame | np.ndarray
-    ) -> None:
+    def explain_global(self, features: pd.DataFrame | np.ndarray) -> None:
         """
         Réalise une beeswarm et scatter plot générale des features
         features : DataFrame ou ndarray (n_samples, n_features)
@@ -165,16 +150,10 @@ class MLModel:
         shap.summary_plot(shap_values_global, features)
 
         for feature in self.features_names:
-            shap.plots.scatter(
-                shap_values_global[:, feature],
-                features[feature]
-                )
+            shap.plots.scatter(shap_values_global[:, feature], features[feature])
 
     def explain_local(
-        self,
-        features: List[float] | np.ndarray,
-        i: int = 0,
-        max_display: int = 5
+        self, features: List[float] | np.ndarray, i: int = 0, max_display: int = 5
     ):
         """
         Réalise une beeswarm et scatter plot générale des features

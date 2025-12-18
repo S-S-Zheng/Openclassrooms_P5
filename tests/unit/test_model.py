@@ -5,14 +5,14 @@ Tests du modèle ML
 from unittest.mock import patch
 
 import numpy as np
-import pandas as pd
+
+# import pandas as pd
 import pytest
 
 from app.ml.model import MLModel
-from tests.dummies.dummies import (
+from tests.dummies.dummies import (  # DummyShapExplanation,
     DummyCatBoost,
     DummyShapExplainer,
-    DummyShapExplanation
 )
 
 # =============================== INIT =======================================
@@ -27,6 +27,7 @@ def test_init():
     assert ml.threshold is None
     assert ml.classes == ["Employé", "Démissionaire"]
     assert ml.explainer is None
+
 
 # ================================= LOAD ======================================
 
@@ -58,6 +59,7 @@ def test_load_model_success(tmp_path, mock_pickle, mock_catboost, mock_shap):
     assert ml.explainer_global is not None
     assert ml.explainer_local is not None
 
+
 # =======================================================================
 
 
@@ -77,6 +79,7 @@ def test_load_model_failed(
 
     assert ml.model is None
 
+
 # ================================ PREDICT =============================
 
 
@@ -87,6 +90,7 @@ def test_predict_model_not_loaded():
 
     with pytest.raises(ValueError):
         ml.predict([1.0, 2.0, 3.0])
+
 
 # =======================================================================
 
@@ -100,6 +104,7 @@ def test_predict_wrong_feature_length():
 
     with pytest.raises(ValueError):
         ml.predict([1.0, 2.0])
+
 
 # =======================================================================
 
@@ -117,6 +122,7 @@ def test_predict_with_threshold():
     assert conf == 0.7
     assert label == "Démissionaire"
 
+
 # =======================================================================
 
 
@@ -132,6 +138,7 @@ def test_predict_without_threshold():
     assert pred == 1.0
     assert conf == 0.7
     assert label == "Démissionaire"
+
 
 # ==================== GET FEATURE IMPORTANCE ================================
 
@@ -179,6 +186,7 @@ def test_explain_global(mock_scatter, mock_summary):
     mock_summary.assert_called_once()
     assert mock_scatter.call_count == len(ml.features_names)
 
+
 # =======================================================================
 
 
@@ -187,6 +195,7 @@ def test_explain_global_model_not_loaded():
     ml = MLModel()
     with pytest.raises(ValueError):
         ml.explain_global([[1, 2, 3]])
+
 
 # =======================================================================
 
@@ -197,6 +206,7 @@ def test_explain_global_no_features():
     ml.model = DummyCatBoost()
     with pytest.raises(ValueError):
         ml.explain_global([[1, 2, 3]])
+
 
 # =======================================================================
 

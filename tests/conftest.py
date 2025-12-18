@@ -58,9 +58,7 @@ def mock_pickle(monkeypatch):
 # catboost
 @pytest.fixture
 def mock_catboost(monkeypatch):
-    monkeypatch.setattr(
-        "app.ml.model.CatBoostClassifier", lambda: DummyCatBoost()
-    )
+    monkeypatch.setattr("app.ml.model.CatBoostClassifier", lambda: DummyCatBoost())
 
 
 # shap

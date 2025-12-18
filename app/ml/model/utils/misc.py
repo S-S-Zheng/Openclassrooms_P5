@@ -26,10 +26,7 @@ def features_types(data: pd.DataFrame) -> list:
 
 # Fonction pour calculer les proportion de valeurs renseignées par feature
 def data_props(
-    df: pd.DataFrame,
-    ind_name: str,
-    numeric_ind_list: list,
-    ind_sort_order: str
+    df: pd.DataFrame, ind_name: str, numeric_ind_list: list, ind_sort_order: str
 ) -> pd.DataFrame:
     """
     Retourne 2 dataframes listant les proportions de valeurs renseignées.
@@ -72,9 +69,7 @@ def data_props(
 
     # Moyenne globale (toutes colonnes) ⇒ % de complétion
     propsInd_data = indicator_availability.mean(axis=1) * 100
-    propsInd_data = propsInd_data.rename(
-        "props_per_indicator(%)"
-        ).reset_index()
+    propsInd_data = propsInd_data.rename("props_per_indicator(%)").reset_index()
 
     # Suppression des lignes entièrement vides (0%)
     propsInd_data = propsInd_data[propsInd_data["props_per_indicator(%)"] > 0]
@@ -95,9 +90,7 @@ def data_props(
 
     # Tri selon ind_sort_order
     if ind_sort_order not in df_ind_name.columns:
-        raise ValueError(
-            f"{ind_sort_order} n'est pas dans les colonnes numériques."
-        )
+        raise ValueError(f"{ind_sort_order} n'est pas dans les colonnes numériques.")
     df_ind_name = df_ind_name.sort_values(by=ind_sort_order, ascending=False)
 
     return propsInd_data, df_ind_name
@@ -179,8 +172,7 @@ def top_score(
         raise KeyError(f"Colonnes absentes du DataFrame : {missing}")
 
     top_param = (
-        rank_df.sort_values(
-            "score").reset_index(drop=True).loc[:, selected_cols]
+        rank_df.sort_values("score").reset_index(drop=True).loc[:, selected_cols]
     )
 
     ################################################################
@@ -211,9 +203,7 @@ def iqr_outliers(datas: pd.DataFrame, iqr_coeff=1.5):
     df_outliers : Toutes les lignes considérées comme outliers
     """
 
-    df_num = datas.select_dtypes(
-        include=["int64", "float64", "int32", "float32"]
-    )
+    df_num = datas.select_dtypes(include=["int64", "float64", "int32", "float32"])
     outlier_index = {}
 
     for col in df_num.columns:
@@ -260,9 +250,7 @@ def zmad_outliers(datas: pd.DataFrame, zmad_coeff=3.5):
     df_outliers : Toutes les lignes considérées comme outliers
     """
 
-    df_num = datas.select_dtypes(
-        include=["int64", "float64", "int32", "float32"]
-    )
+    df_num = datas.select_dtypes(include=["int64", "float64", "int32", "float32"])
     outlier_index = {}
     # Médiane de chaque feature numérique
     med = df_num.median()
@@ -301,8 +289,7 @@ def model_attr(models: dict):
     """
     for name, model in models.items():
         print(
-            name, hasattr(model, "predict_proba"),
-            hasattr(model, "decision_function")
+            name, hasattr(model, "predict_proba"), hasattr(model, "decision_function")
         )
 
 
@@ -406,9 +393,7 @@ def threshold_tuning(
             "Seuil_optimal": sup_target_threshold[idx],
         }
     else:
-        raise ValueError(
-            "Méthode inconnue, choisir entre f,recall et precision"
-        )
+        raise ValueError("Méthode inconnue, choisir entre f,recall et precision")
 
 
 ############################################################################

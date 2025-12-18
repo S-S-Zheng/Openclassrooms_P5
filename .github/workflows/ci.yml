@@ -42,12 +42,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 black isort
       # Exécute les outils de linting
+      - name: Run isort
+        run: isort --profile black --check-only app/ tests/
       - name: Run Black
         run: black --check app/ tests/
-      - name: Run isort
-        run: isort --check-only app/ tests/
+      # E203 (conflits avec les slices formatés par black)
+      # W503 (black pref les operateurs en début de ligne)
+      # sont ignorés pour compatibilité avec Black
       - name: Run Flake8
-        run: flake8 app/ tests/ --max-line-length=100 --ignore=E203,W503
+        run: flake8 app/ tests/ --max-line-length=100 --extend-ignore=E203,W503
 
   test:
     name: Tests
