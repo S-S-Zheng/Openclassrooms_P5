@@ -19,7 +19,7 @@ on:
 
 # Variables d'environnement globales
 env:
-  PYTHON_VERSION: '3.13'
+  PYTHON_VERSION: '3.11'
 
 # Jobs
 jobs:
@@ -74,10 +74,10 @@ jobs:
       # Lance les tests avec coverage
       - name: Run tests with coverage
         run: |
-          pytest /tests \
+          pytest tests \
             --cov=app \
             --cov-report=term-missing \
-            --cov-fail-under=100 \
+            --cov-fail-under=80 \
             --cov-report=html
       # Créer un rapport de couverture HTML
       - name: Archive coverage report

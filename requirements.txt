@@ -17,7 +17,6 @@ babel==2.17.0 ; python_version >= "3.13"
 beautifulsoup4==4.14.2 ; python_version >= "3.13"
 bentoml==1.4.28 ; python_version >= "3.13"
 bleach==6.3.0 ; python_version >= "3.13"
-catboost==1.2.8 ; python_version >= "3.13"
 cattrs==23.1.2 ; python_version >= "3.13"
 certifi==2025.10.5 ; python_version >= "3.13"
 cffi==2.0.0 ; python_version >= "3.13"
@@ -89,7 +88,6 @@ nest-asyncio==1.6.0 ; python_version >= "3.13"
 notebook-shim==0.2.4 ; python_version >= "3.13"
 notebook==7.4.7 ; python_version >= "3.13"
 numba==0.63.0b1 ; python_version >= "3.13"
-numpy==2.3.4 ; python_version >= "3.13"
 nvidia-ml-py==13.580.82 ; python_version >= "3.13"
 opentelemetry-api==1.38.0 ; python_version >= "3.13"
 opentelemetry-instrumentation-aiohttp-client==0.59b0 ; python_version >= "3.13"
@@ -99,7 +97,6 @@ opentelemetry-sdk==1.38.0 ; python_version >= "3.13"
 opentelemetry-semantic-conventions==0.59b0 ; python_version >= "3.13"
 opentelemetry-util-http==0.59b0 ; python_version >= "3.13"
 packaging==25.0 ; python_version >= "3.13"
-pandas==2.3.3 ; python_version >= "3.13"
 pandocfilters==1.5.1 ; python_version >= "3.13"
 parso==0.8.5 ; python_version >= "3.13"
 pathspec==0.12.1 ; python_version >= "3.13"
@@ -118,8 +115,6 @@ psutil==7.1.3 ; python_version >= "3.13"
 ptyprocess==0.7.0 ; (os_name != "nt" or sys_platform != "win32" and sys_platform != "emscripten") and python_version >= "3.13"
 pure-eval==0.2.3 ; python_version >= "3.13"
 pycparser==2.23 ; python_version >= "3.13" and implementation_name != "PyPy"
-pydantic-core==2.41.5 ; python_version >= "3.13"
-pydantic==2.12.4 ; python_version >= "3.13"
 pygments==2.19.2 ; python_version >= "3.13"
 pyparsing==3.2.5 ; python_version >= "3.13"
 python-dateutil==2.9.0.post0 ; python_version >= "3.13"
@@ -138,12 +133,10 @@ rich-toolkit==0.15.1 ; python_version >= "3.13"
 rich==14.2.0 ; python_version >= "3.13"
 rpds-py==0.28.0 ; python_version >= "3.13"
 schema==0.7.8 ; python_version >= "3.13"
-scikit-learn==1.7.2 ; python_version >= "3.13"
 scipy==1.16.3 ; python_version >= "3.13"
 seaborn==0.13.2 ; python_version >= "3.13"
 send2trash==1.8.3 ; python_version >= "3.13"
 setuptools==80.9.0 ; python_version >= "3.13"
-shap==0.50.0 ; python_version >= "3.13"
 simple-di==0.1.5 ; python_version >= "3.13"
 six==1.17.0 ; python_version >= "3.13"
 slicer==0.0.8 ; python_version >= "3.13"
@@ -175,9 +168,17 @@ wrapt==1.17.3 ; python_version >= "3.13"
 wsproto==1.3.1 ; python_version >= "3.13"
 yarl==1.22.0 ; python_version >= "3.13"
 zipp==3.23.0 ; python_version >= "3.13"
-gradio == 6.1.0; python_version >= "3.13"
-sqlalchemy == 2.0.39; python_version >= "3.13"
-psycopg2 == 2.9.11 ; python_version >= "3.13"
-pytest == 8.3.4; python_version >= "3.13"
-pytes-cov == 7.0.0; python_version >= "3.13"
-shinx == 8.2.3; python_version >= "3.13"
+gradio>=4.0
+pydantic>=2.6
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+pytest==8.3.4
+pytest-cov==5.0.0
+black>=24.3
+isort>=5.13
+flake8>=7.0
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.4
+catboost>=1.2
+shap>=0.44
