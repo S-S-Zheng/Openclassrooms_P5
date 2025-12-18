@@ -1,35 +1,39 @@
 """
 Tests du modèle ML
 """
-import pytest
+
 from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
+import pytest
+
 from app.ml.model import MLModel
-from tests.dummies.dummies import DummyCatBoost, DummyShapExplainer, DummyShapExplanation
+from tests.dummies.dummies import (
+    DummyCatBoost,
+    DummyShapExplainer,
+    DummyShapExplanation
+)
+
+# =============================== INIT =======================================
+
 
 # test methode init() ()
 def test_init():
     ml = MLModel()
-    
-    # Pourquoi les chemins ne sont pas testés ici ??
+
     assert ml.model is None
     assert ml.features_names is None
     assert ml.threshold is None
     assert ml.classes == ["Employé", "Démissionaire"]
     assert ml.explainer is None
-#========================================
-# init - CAS Manquants: pas de vérification des chemins ==> importance limitée?
-#========================================
+
+# ================================= LOAD ======================================
+
 
 # test de la méthode load() (model, features,seuil et shap)
 # load - CAS nominal
-def test_load_model_success(
-    tmp_path,
-    mock_pickle,
-    mock_catboost,
-    mock_shap
-    ):
+def test_load_model_success(tmp_path, mock_pickle, mock_catboost, mock_shap):
 
     model_file = tmp_path / "model.cbm"
     features_file = tmp_path / "features_names.pkl"
@@ -43,7 +47,7 @@ def test_load_model_success(
     ml = MLModel(
         model_path=model_file,
         features_names_path=features_file,
-        threshold_path=threshold_file
+        threshold_path=threshold_file,
     )
 
     ml.load()
@@ -53,25 +57,28 @@ def test_load_model_success(
     assert ml.threshold == 0.6
     assert ml.explainer_global is not None
     assert ml.explainer_local is not None
-    
+
+# =======================================================================
+
+
 # load - CAS model manquant
 def test_load_model_failed(
     tmp_path,
-    ):
+):
     model_file = tmp_path / "model.cbm"
     features_file = tmp_path / "features_names.pkl"
     threshold_file = tmp_path / "thresh_opt.pkl"
     ml = MLModel(
-        model_path = model_file,
-        features_names_path = features_file,
-        threshold_path = threshold_file
+        model_path=model_file,
+        features_names_path=features_file,
+        threshold_path=threshold_file,
     )
     ml.load()
 
     assert ml.model is None
-#========================================
-# load - CAS Manquants: pas de features_names, pas de seuil, shap ==> importance limitée?
-#========================================
+
+# ================================ PREDICT =============================
+
 
 # test predict() (model nn chargé, nb features diff, seuil par défaut ou opt)
 # predict - CAS modele non chargé
@@ -80,7 +87,10 @@ def test_predict_model_not_loaded():
 
     with pytest.raises(ValueError):
         ml.predict([1.0, 2.0, 3.0])
-        
+
+# =======================================================================
+
+
 # predict - CAS nombre de features différents
 def test_predict_wrong_feature_length():
     ml = MLModel()
@@ -90,6 +100,8 @@ def test_predict_wrong_feature_length():
 
     with pytest.raises(ValueError):
         ml.predict([1.0, 2.0])
+
+# =======================================================================
 
 
 # predict - CAS seuil opt
@@ -105,6 +117,8 @@ def test_predict_with_threshold():
     assert conf == 0.7
     assert label == "Démissionaire"
 
+# =======================================================================
+
 
 # predict - CAS seuil par défaut
 def test_predict_without_threshold():
@@ -119,8 +133,11 @@ def test_predict_without_threshold():
     assert conf == 0.7
     assert label == "Démissionaire"
 
+# ==================== GET FEATURE IMPORTANCE ================================
 
-# test get_feature_importance() (model non chargé, features_names non défini, top_n)
+
+# test get_feature_importance()
+# (model non chargé, features_names non défini, top_n)
 def test_get_feature_importance():
     ml = MLModel()
     ml.model = DummyCatBoost()
@@ -128,17 +145,17 @@ def test_get_feature_importance():
 
     top_features = ml.get_feature_importance(top_n=3)
 
-    assert len(top_features) == 3 # verifie que le nb d'element est correct
-    assert top_features[0][0] in ml.features_names # vérif nom feature juste
-    assert isinstance(top_features[0][1], float) # verif importance est un float
-#========================================
-# feature_iportance - CAS Manquants: les chargements ==> importance limitée?
-#========================================
+    assert len(top_features) == 3  # verifie que le nb d'element est correct
+    assert top_features[0][0] in ml.features_names  # vérif nom feature juste
+    assert isinstance(top_features[0][1], float)  # verif importance est float
+
+
+# =======================================================================
+
 
 # test SHAP (explainer global et local)
-# On ne test pas les plots car visu hors sccope tests unitaires ==> réduit couverture!
+# On test pas les plots car visu hors sccope tests unit ==> réduit couverture
 # On veut juste s'assurrer qu'il n'y a pas d'erreurs
-
 # explain_global - CAS nominal
 @patch("shap.summary_plot")
 @patch("shap.plots.scatter")
@@ -149,16 +166,21 @@ def test_explain_global(mock_scatter, mock_summary):
     ml.explainer_global = DummyShapExplainer()
 
     # Dataset (n_samples=5, n_features=3)
-    features = np.array([
-        [1.0, 2.0, 3.0],
-        [1.1, 2.1, 3.1],
-        [0.9, 1.9, 2.9],
-        [1.2, 2.2, 3.2],
-        [1.3, 2.3, 3.3],
-    ])
+    features = np.array(
+        [
+            [1.0, 2.0, 3.0],
+            [1.1, 2.1, 3.1],
+            [0.9, 1.9, 2.9],
+            [1.2, 2.2, 3.2],
+            [1.3, 2.3, 3.3],
+        ]
+    )
     ml.explain_global(features)
     mock_summary.assert_called_once()
     assert mock_scatter.call_count == len(ml.features_names)
+
+# =======================================================================
+
 
 # explain_global - CAS modele non chargé
 def test_explain_global_model_not_loaded():
@@ -166,12 +188,18 @@ def test_explain_global_model_not_loaded():
     with pytest.raises(ValueError):
         ml.explain_global([[1, 2, 3]])
 
+# =======================================================================
+
+
 # explain_global - CAS features_names non défini
 def test_explain_global_no_features():
     ml = MLModel()
     ml.model = DummyCatBoost()
     with pytest.raises(ValueError):
         ml.explain_global([[1, 2, 3]])
+
+# =======================================================================
+
 
 # explain_local - CAS nominal
 @patch("shap.plots.waterfall")
@@ -182,9 +210,5 @@ def test_explain_local(mock_waterfall):
     ml.explainer_local = DummyShapExplainer()
     # Dataset (n_samples=3)
     features = [1.0, 2.0, 3.0]
-    ml.explain_local(features, i =0, max_display = 3)
+    ml.explain_local(features, i=0, max_display=3)
     mock_waterfall.assert_called_once()
-#========================================
-# shap - CAS Manquants: les chargements ==> déja traités + revu dans global
-# Pas de changement fondamental donc pas nécéssaire
-#========================================

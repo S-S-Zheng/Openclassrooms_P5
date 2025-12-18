@@ -1,12 +1,12 @@
 """
 Configuration pytest et fixtures
 """
-import pytest
-import os
+
 import numpy as np
+import pytest
 
 
-######################### MOCKS  ##########################
+# ====================== MOCKS  =======================
 # Version mock de CBC
 class DummyCatBoost:
     def load_model(self, path):
@@ -21,8 +21,9 @@ class DummyCatBoost:
     def get_feature_importance(self):
         return np.array([0.2, 0.5, 0.3])
 
+
 # Version mock de shap.Explanation
-class DummyShapExplanation: 
+class DummyShapExplanation:
     def __init__(self, n_samples=5, n_features=3):
         self.values = np.random.randn(n_samples, n_features)
         self.base_values = np.zeros(n_samples)
@@ -32,13 +33,15 @@ class DummyShapExplanation:
     def __getitem__(self, key):
         return self
 
+
 # mock du TreeExplainer
 class DummyShapExplainer:
     def __call__(self, X):
         n_samples, n_features = X.shape
         return DummyShapExplanation(n_samples, n_features)
 
-################## FIXTURES ########################
+
+# ========================== FIXTURES ==========================
 # pickle.load
 @pytest.fixture
 def mock_pickle(monkeypatch):
@@ -48,15 +51,15 @@ def mock_pickle(monkeypatch):
         if "thresh" in str(file.name):
             return 0.6
         return None
-    
+
     monkeypatch.setattr("pickle.load", fake_load)
-    
+
+
 # catboost
 @pytest.fixture
 def mock_catboost(monkeypatch):
     monkeypatch.setattr(
-        "app.ml.model.CatBoostClassifier",
-        lambda: DummyCatBoost()
+        "app.ml.model.CatBoostClassifier", lambda: DummyCatBoost()
     )
 
 
@@ -64,6 +67,5 @@ def mock_catboost(monkeypatch):
 @pytest.fixture
 def mock_shap(monkeypatch):
     monkeypatch.setattr(
-        "app.ml.model.shap.TreeExplainer",
-        lambda model: DummyShapExplainer()
+        "app.ml.model.shap.TreeExplainer", lambda model: DummyShapExplainer()
     )

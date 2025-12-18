@@ -1,6 +1,7 @@
-######################### MOCKS  ##########################
+# ============================ MOCKS  ============================
 # Version mock de CBC
 import numpy as np
+
 
 class DummyCatBoost:
     def load_model(self, path):
@@ -15,8 +16,9 @@ class DummyCatBoost:
     def get_feature_importance(self):
         return np.array([0.2, 0.5, 0.3])
 
+
 # Version mock de shap.Explanation
-class DummyShapExplanation: 
+class DummyShapExplanation:
     def __init__(self, n_samples=5, n_features=3):
         self.values = np.random.randn(n_samples, n_features)
         self.base_values = np.zeros(n_samples)
@@ -25,6 +27,7 @@ class DummyShapExplanation:
 
     def __getitem__(self, key):
         return self
+
 
 # mock du TreeExplainer
 class DummyShapExplainer:
