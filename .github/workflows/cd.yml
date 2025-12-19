@@ -7,13 +7,13 @@ name: CD Pipeline
 # Lance le workflow seulement si succès du workflow CI
 on:
   workflow_run:
-    workflows: ["ci"]
+    workflows: ["CI Pipeline"]
     types:
       - completed
 
-# Variables d'environnement globales
-env:
-  PYTHON_VERSION: '3.11'
+# Permissions nécessaires pour le workflow
+permissions:
+  contents: read
 
 # Jobs
 jobs:
