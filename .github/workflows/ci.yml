@@ -24,7 +24,7 @@ env:
 # Jobs
 jobs:
   lint:
-    name: Linting
+    name: lint
     runs-on: ubuntu-latest
     # étapes du linting
     steps:
@@ -53,7 +53,7 @@ jobs:
         run: flake8 app/ tests/ --max-line-length=100 --extend-ignore=E203,W503
 
   test:
-    name: Tests
+    name: test
     runs-on: ubuntu-latest
     # Oblige la validation de lint avant
     needs: lint
