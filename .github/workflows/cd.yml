@@ -36,6 +36,36 @@ jobs:
         # Clone tout l'historique du dépôt
         with:
           fetch-depth: 0
+      - name: Prepare HF deployment folder
+        # Prépare le dossier de déploiement avec les fichiers minimaux nécessaires
+        # Evite d'alourdir HF et de subir les interdictions
+        run: |
+          rm -rf hf_deploy
+          mkdir -p hf_deploy/app/ml
+
+          # Fichiers racine
+          cp README.md hf_deploy/
+          cp requirements.txt hf_deploy/
+
+          # Init Python
+          cp app/__init__.py hf_deploy/app/
+          cp app/ml/__init__.py hf_deploy/app/ml/
+
+          # Code ML
+          mkdir -p hf_deploy/app/ml/model/utils
+          cp app/ml/model.py hf_deploy/app/ml/
+          cp app/ml/model/utils/* hf_deploy/app/ml/model/utils/
+
+          # Artefacts ML (modele, features names, threshold opt)
+          mkdir -p hf_deploy/app/ml/model/datas/results/model/
+          mkdir -p hf_deploy/app/ml/model/datas/results/features_names/
+          mkdir -p hf_deploy/app/ml/model/datas/results/threshold_opt/
+          cp app/ml/model/datas/results/model/best_model.cbm \
+            hf_deploy/app/ml/model/datas/results/model/
+          cp app/ml/model/datas/results/features_names/features_names.pkl \
+            hf_deploy/app/ml/model/datas/results/features_names/
+          cp app/ml/model/datas/results/threshold_opt/thresh_opt.pkl \
+            hf_deploy/app/ml/model/datas/results/threshold_opt/
       - name: Push to Hugging Face Space
         # Configure git et pousse le code vers HFSpaces
         # mail et user obligatoires pour github, emploie valeurs génériques
@@ -46,11 +76,14 @@ jobs:
           git config --global user.email "ci@github-actions.com"
           git config --global user.name "GitHub Actions"
           HF_URL="https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE_NAME}"
-          if git remote get-url hf >/dev/null 2>&1; then
-            git remote set-url hf "$HF_URL"
-          else
-            git remote add hf "$HF_URL"
-          fi
+          # Dplt vers hf_deploy, structuration git afin de n'envoyer que hf_deploy
+          cd hf_deploy
+          git init
+          git remote add hf "$HF_URL"
+          git add .
+          git commit -m "Deploiement automatique via GitHub Actions"
+          git branch -M main
+
           git push hf main --force
       - name: Notify deployment
         if: success()
