@@ -83,7 +83,6 @@ jobs:
           git add .
           git commit -m "Deploiement automatique via GitHub Actions"
           git branch -M main
-
           git push hf main --force
       - name: Notify deployment
         if: success()
