@@ -23,7 +23,7 @@ def predict(payload: PredictionInput):
     Endpoint de prédiction du modèle ML.
     """
     try:
-        prediction, confidence, label = ml_model.predict(payload.features)
+        prediction, confidence, class_name = ml_model.predict(payload.features)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as e:
@@ -32,5 +32,5 @@ def predict(payload: PredictionInput):
     return PredictionOutput(
         prediction=prediction,
         confidence=confidence,
-        label=label,
+        class_name=class_name,
     )

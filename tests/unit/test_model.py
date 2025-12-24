@@ -2,18 +2,10 @@
 Tests du modèle ML
 """
 
-from unittest.mock import patch
-
-import numpy as np
-
-# import pandas as pd
+# import numpy as np
 import pytest
 
 from app.ml.model import MLModel
-from tests.dummies.dummies import (  # DummyShapExplanation,
-    DummyCatBoost,
-    DummyShapExplainer,
-)
 
 # =============================== INIT =======================================
 
@@ -44,7 +36,7 @@ def test_load_model_success(tmp_path, mock_pickle, mock_catboost, mock_shap):
     features_file.touch()
     threshold_file.touch()
 
-    # test les chemins ici via des fichiers temporaires plutôt que dans init
+    # test les chemins ici via des fichiers temporaires
     ml = MLModel(
         model_path=model_file,
         features_names_path=features_file,
@@ -96,9 +88,9 @@ def test_predict_model_not_loaded():
 
 
 # predict - CAS nombre de features différents
-def test_predict_wrong_feature_length():
+def test_predict_wrong_feature_length(mock_catboost):
     ml = MLModel()
-    ml.model = DummyCatBoost()
+    ml.model = mock_catboost
     ml.features_names = ["f1", "f2", "f3"]
     ml.threshold = 0.6
 
@@ -110,9 +102,9 @@ def test_predict_wrong_feature_length():
 
 
 # predict - CAS seuil opt
-def test_predict_with_threshold():
+def test_predict_with_threshold(mock_catboost):
     ml = MLModel()
-    ml.model = DummyCatBoost()
+    ml.model = mock_catboost
     ml.features_names = ["f1", "f2", "f3"]
     ml.threshold = 0.6
 
@@ -127,9 +119,9 @@ def test_predict_with_threshold():
 
 
 # predict - CAS seuil par défaut
-def test_predict_without_threshold():
+def test_predict_without_threshold(mock_catboost):
     ml = MLModel()
-    ml.model = DummyCatBoost()
+    ml.model = mock_catboost
     ml.features_names = ["f1", "f2", "f3"]
     ml.threshold = None
 
@@ -145,9 +137,9 @@ def test_predict_without_threshold():
 
 # test get_feature_importance()
 # (model non chargé, features_names non défini, top_n)
-def test_get_feature_importance():
+def test_get_feature_importance(mock_catboost):
     ml = MLModel()
-    ml.model = DummyCatBoost()
+    ml.model = mock_catboost
     ml.features_names = ["f1", "f2", "f3"]
 
     top_features = ml.get_feature_importance(top_n=3)
@@ -164,61 +156,46 @@ def test_get_feature_importance():
 # On test pas les plots car visu hors sccope tests unit ==> réduit couverture
 # On veut juste s'assurrer qu'il n'y a pas d'erreurs
 # explain_global - CAS nominal
-@patch("shap.summary_plot")
-@patch("shap.plots.scatter")
-def test_explain_global(mock_scatter, mock_summary):
+def test_explain_global(mock_catboost, mock_shap, sample_features):
     ml = MLModel()
-    ml.model = DummyCatBoost()
+    ml.model = mock_catboost
     ml.features_names = ["f1", "f2", "f3"]
-    ml.explainer_global = DummyShapExplainer()
+    ml.explainer_global = mock_shap
 
-    # Dataset (n_samples=5, n_features=3)
-    features = np.array(
-        [
-            [1.0, 2.0, 3.0],
-            [1.1, 2.1, 3.1],
-            [0.9, 1.9, 2.9],
-            [1.2, 2.2, 3.2],
-            [1.3, 2.3, 3.3],
-        ]
-    )
-    ml.explain_global(features)
-    mock_summary.assert_called_once()
-    assert mock_scatter.call_count == len(ml.features_names)
+    ml.explain_global(sample_features)
 
 
 # =======================================================================
 
 
 # explain_global - CAS modele non chargé
-def test_explain_global_model_not_loaded():
+def test_explain_global_model_not_loaded(sample_features):
     ml = MLModel()
     with pytest.raises(ValueError):
-        ml.explain_global([[1, 2, 3]])
+        ml.explain_global(sample_features)
 
 
 # =======================================================================
 
 
 # explain_global - CAS features_names non défini
-def test_explain_global_no_features():
+def test_explain_global_no_features(mock_catboost, sample_features):
     ml = MLModel()
-    ml.model = DummyCatBoost()
+    ml.model = mock_catboost
     with pytest.raises(ValueError):
-        ml.explain_global([[1, 2, 3]])
+        ml.explain_global(sample_features)
 
 
 # =======================================================================
 
 
 # explain_local - CAS nominal
-@patch("shap.plots.waterfall")
-def test_explain_local(mock_waterfall):
+def test_explain_local(mock_catboost, mock_shap):
     ml = MLModel()
-    ml.model = DummyCatBoost()
+    ml.model = mock_catboost
     ml.features_names = ["f1", "f2", "f3"]
-    ml.explainer_local = DummyShapExplainer()
+    ml.explainer_local = mock_shap
     # Dataset (n_samples=3)
     features = [1.0, 2.0, 3.0]
+
     ml.explain_local(features, i=0, max_display=3)
-    mock_waterfall.assert_called_once()

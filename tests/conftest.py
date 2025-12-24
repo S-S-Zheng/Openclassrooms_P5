@@ -2,54 +2,37 @@
 Configuration pytest et fixtures
 """
 
+# import pickle
+from unittest.mock import MagicMock, create_autospec
+
 import numpy as np
 import pytest
 
+# import shap
+from catboost import CatBoostClassifier
+from fastapi.testclient import TestClient
 
-# ====================== MOCKS  =======================
-# Version mock de CBC
-class DummyCatBoost:
-    def load_model(self, path):
-        pass
+from app.main import app
 
-    def predict_proba(self, X):
-        return np.array([[0.3, 0.7]])
-
-    def predict(self, X):
-        return np.array([1])
-
-    def get_feature_importance(self):
-        return np.array([0.2, 0.5, 0.3])
+# ========================== MOCK/FIXTURE==========================
 
 
-# Version mock de shap.Explanation
-class DummyShapExplanation:
-    def __init__(self, n_samples=5, n_features=3):
-        self.values = np.random.randn(n_samples, n_features)
-        self.base_values = np.zeros(n_samples)
-        self.data = np.random.randn(n_samples, n_features)
-        self.feature_names = [f"f{i+1}" for i in range(n_features)]
-
-    def __getitem__(self, key):
-        return self
+# dataset de test de 5 observations x 3 features
+@pytest.fixture
+def sample_features():
+    return np.random.randn(5, 3)
 
 
-# mock du TreeExplainer
-class DummyShapExplainer:
-    def __call__(self, X):
-        n_samples, n_features = X.shape
-        return DummyShapExplanation(n_samples, n_features)
-
-
-# ========================== FIXTURES ==========================
 # pickle.load
 @pytest.fixture
 def mock_pickle(monkeypatch):
+    fake_data = {"features_names": ["f1", "f2"], "thresh": 0.6}
+
     def fake_load(file):
-        if "features_names" in str(file.name):
-            return ["f1", "f2"]
-        if "thresh" in str(file.name):
-            return 0.6
+        filename = str(file)
+        for key, value in fake_data.items():
+            if key in filename:
+                return value
         return None
 
     monkeypatch.setattr("pickle.load", fake_load)
@@ -58,12 +41,71 @@ def mock_pickle(monkeypatch):
 # catboost
 @pytest.fixture
 def mock_catboost(monkeypatch):
-    monkeypatch.setattr("app.ml.model.CatBoostClassifier", lambda: DummyCatBoost())
+    # create_autospec crée mock exact mêmes méthodes que vrai CatBoost
+    mock_model = create_autospec(CatBoostClassifier, instance=True)
+    # Par défaut MagicMock ne fait rien mais on écrit None pour se souvenir
+    # qu'il y a cette fonction équivalent à pass ici
+    mock_model.load_model.return_value = None
+    mock_model.predict_proba.return_value = np.array([[0.3, 0.7]])
+    mock_model.predict.return_value = np.array([1])
+    mock_model.get_feature_importance.return_value = np.array([0.2, 0.5, 0.3])
+
+    monkeypatch.setattr("app.ml.model.CatBoostClassifier", lambda: mock_model)
+    return mock_model
 
 
 # shap
+# create_autospec excellent pour les classes type CBC mais fragile pour les
+# bibliothèques type shap (structure shap dynamique) ==> MagicMock plutôt
 @pytest.fixture
 def mock_shap(monkeypatch):
-    monkeypatch.setattr(
-        "app.ml.model.shap.TreeExplainer", lambda model: DummyShapExplainer()
-    )
+    # 1. Mock de l'objet Explanation (ce que renvoie l'explainer)
+    mock_explanation = MagicMock()
+    # Pas de return_values car on consulte les attributs values, base_values,
+    # data de TreeExplainer
+    mock_explanation.values = np.random.randn(5, 3)
+    mock_explanation.base_values = np.zeros(5)
+    mock_explanation.data = np.random.randn(5, 3)
+    # Important : simuler le slicing explanation[i]
+    # __getitem__ doit retourner l'objet lui-même ou une version réduite
+    mock_explanation.__getitem__.return_value = mock_explanation
+
+    # 2. Mock du TreeExplainer
+    mock_explainer = MagicMock()
+    # return_value ici car on appelle la fonction TreeExplainer
+    mock_explainer.return_value = mock_explanation  # Pour l'appel __call__
+
+    # # 3. Patch des fonctions de visualisation
+    # # En les mockant ==> evite l'ouverture auto des fenetres pour rien
+    # mock_summary = monkeypatch.setattr("shap.summary_plot", MagicMock())
+    # mock_scatter = monkeypatch.setattr("shap.plots.scatter", MagicMock())
+    # mock_waterfall = monkeypatch.setattr("shap.plots.waterfall", MagicMock())
+
+    monkeypatch.setattr("shap.TreeExplainer", lambda model: mock_explainer)
+
+    return mock_explainer
+
+
+# Client FastAPI
+@pytest.fixture
+def client():
+    return TestClient(app)
+
+
+# MLModel
+@pytest.fixture
+def mock_ml_model(monkeypatch):
+    def _factory(should_fail=True, error_type="value"):
+        mock = MagicMock()
+        if should_fail:
+            if error_type == "value":
+                mock.predict.side_effect = ValueError("Modèle non chargé")
+            else:
+                mock.predict.side_effect = Exception("Erreur interne critique")
+        else:
+            mock.predict.return_value = (1.0, 0.85, "Démissionaire")
+
+        monkeypatch.setattr("app.api.routes.predict.ml_model", mock)
+        return mock
+
+    return _factory
