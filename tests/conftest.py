@@ -2,13 +2,13 @@
 Configuration pytest et fixtures
 """
 
-# import pickle
+# le noqa permet d'indiquer explicitement a isort d'ignorer les lignes
+import pickle  # noqa: F401
 from unittest.mock import MagicMock, create_autospec
 
 import numpy as np
 import pytest
-
-# import shap
+import shap  # noqa: F401
 from catboost import CatBoostClassifier
 from fastapi.testclient import TestClient
 
@@ -75,11 +75,12 @@ def mock_shap(monkeypatch):
     # return_value ici car on appelle la fonction TreeExplainer
     mock_explainer.return_value = mock_explanation  # Pour l'appel __call__
 
-    # # 3. Patch des fonctions de visualisation
-    # # En les mockant ==> evite l'ouverture auto des fenetres pour rien
-    # mock_summary = monkeypatch.setattr("shap.summary_plot", MagicMock())
-    # mock_scatter = monkeypatch.setattr("shap.plots.scatter", MagicMock())
-    # mock_waterfall = monkeypatch.setattr("shap.plots.waterfall", MagicMock())
+    # 3. Patch des fonctions de visualisation
+    # En les mockant ==> evite l'ouverture auto des fenetres pour rien
+    # on prefixe par _ pour indiquer que la var est volontaire inutilisée
+    monkeypatch.setattr("shap.summary_plot", MagicMock())
+    monkeypatch.setattr("shap.plots.scatter", MagicMock())
+    monkeypatch.setattr("shap.plots.waterfall", MagicMock())
 
     monkeypatch.setattr("shap.TreeExplainer", lambda model: mock_explainer)
 

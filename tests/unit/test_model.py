@@ -2,7 +2,7 @@
 Tests du modèle ML
 """
 
-# import numpy as np
+import numpy as np  # noqa: F401
 import pytest
 
 from app.ml.model import MLModel
