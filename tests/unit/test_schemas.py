@@ -8,8 +8,6 @@ from pydantic import ValidationError
 
 from app.api.schemas import (
     ErrorResponse,
-    ExplainLocalInput,
-    ExplainLocalOutput,
     FeatureImportanceOutput,
     ModelInfoOutput,
     PredictionInput,
@@ -76,20 +74,6 @@ def test_feature_importance_output():
     assert len(obj.top_features) == 2
 
 
-# ===================== Shap local =====================
-# On s'assure qu'en input on a bien une liste de float et le msg en output
-def test_explain_local_input():
-    obj = ExplainLocalInput(features=[0.1, 0.2, 0.3])
-
-    assert isinstance(obj.features, list)
-
-
-def test_explain_local_output_default_message():
-    obj = ExplainLocalOutput()
-
-    assert obj.message == "Local explanation generated"
-
-
 # ===================== Métadatas du modèle =====================
 # Test de santé pas de précision, on s'attend juste a ce que toutes les
 # données soient présntes et dans avec le bon type
@@ -101,7 +85,10 @@ def test_model_info_output():
         threshold=0.6,
     )
 
-    assert obj is not None
+    assert obj.model_type == "CatBoostClassifier"
+    assert obj.n_features == 12
+    assert obj.classes == ["Employé", "Démissionaire"]
+    assert obj.threshold == 0.6
 
 
 # ===================== Erreur standardisée =====================

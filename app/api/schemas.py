@@ -4,16 +4,17 @@ Modèles de schémas Pydantic pour les requêtes et réponses API
 | Endpoint               | Méthode ML                       |
 | ---------------------- | -------------------------------- |
 | `/predict`             | `MLModel.predict`                |
-| `/features/importance` | `MLModel.get_feature_importance` |
-| `/explain/local`       | `MLModel.explain_local`          |
+| `/feature-importance`  | `MLModel.get_feature_importance` |
 | `/health`              | `ml.model is not None`           |
-| `/model/info`          | attributs du modèle              |
+| `/model-info`          | attributs du modèle              |
 """
 
 from typing import List, Tuple
 
 # Imports
 from pydantic import BaseModel, Field
+
+# ========================= PREDICTION ===========================
 
 
 # Schéma pour les entrées de prédiction
@@ -31,19 +32,15 @@ class PredictionOutput(BaseModel):
     class_name: str = Field(..., description="Nom lisible de la classe")
 
 
+# ========================= FEATURE IMPORTANCE ===========================
+
+
 # Schéma pour les importances des features
 class FeatureImportanceOutput(BaseModel):
     top_features: List[Tuple[str, float]]
 
 
-# Schéma pour les requêtes d'explication
-# Ne renvoie qu'un message de confirmation pour l'instant
-class ExplainLocalInput(BaseModel):
-    features: List[float]
-
-
-class ExplainLocalOutput(BaseModel):
-    message: str = "Local explanation generated"
+# ========================= METADATAS ===========================
 
 
 # Métadatas du modèle
