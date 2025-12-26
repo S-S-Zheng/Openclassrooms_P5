@@ -9,13 +9,11 @@ GET /model-info ==> routes.model_info.
 from fastapi import APIRouter, HTTPException
 
 from app.api.schemas import ModelInfoOutput
-from app.ml.model import MLModel
+from app.ml.model import ml_model
 
 router = APIRouter(prefix="/model-info", tags=["Model informations"])
 
 # ===================== Initialisation du modele =========================
-
-ml_model = MLModel()
 
 
 @router.get("/", response_model=ModelInfoOutput)

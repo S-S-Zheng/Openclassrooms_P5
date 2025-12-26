@@ -14,10 +14,10 @@ from catboost import CatBoostClassifier
 # Récupère/crée logger avec nom du module courant (ex: __name__="model")
 logger = logging.getLogger(__name__)
 
-# Chemins des fichiers à charger:
-model_cbm_path = "model/datas/results/model/best_model.cbm"
-features_names_path = "model/datas/results/features_names/features_names.pkl"
-threshold_path = "model/datas/results/threshold_opt/thresh_opt.pkl"
+# Chemin à charger:
+# __file__ : chemin du fichier en cours d'exe (model.py)
+# resolve(): convertie en chemin absolu + parent: donne le dossier du parent
+BASE_DIR = Path(__file__).resolve().parent / "model/datas/results"
 
 
 class MLModel:
@@ -25,13 +25,13 @@ class MLModel:
 
     def __init__(
         self,
-        model_path: str = model_cbm_path,
-        features_names_path: str = features_names_path,
-        threshold_path: str | None = threshold_path,
+        model_path: str = BASE_DIR / "model/best_model.cbm",
+        features_names_path: str = BASE_DIR / "features_names/features_names.pkl",
+        threshold_path: str | None = BASE_DIR / "threshold_opt/thresh_opt.pkl",
     ):
-        self.model_path = Path(model_path)
-        self.features_names_path = Path(features_names_path)
-        self.threshold_path = Path(threshold_path)
+        self.model_path = model_path
+        self.features_names_path = features_names_path
+        self.threshold_path = threshold_path
 
         self.model: CatBoostClassifier | None = (
             None  # Instance CBC ou None==> utilité doc
@@ -144,5 +144,5 @@ class MLModel:
         return top_features[:top_n]
 
 
-# Instance globale
-model = MLModel()
+# Instance globale et unique
+ml_model = MLModel()

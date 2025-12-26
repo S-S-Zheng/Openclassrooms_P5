@@ -16,8 +16,10 @@ def test_healthcheck(client):
 
 
 # =================== Root =======================
-def test_root(client):
-    response = client.get("/")
+def test_root_redirects_to_docs(client):
+    """Vérifie que la racine redirige vers la documentation."""
+    # follow_redirects=False permet de vérifier le code 307 de redirection
+    response = client.get("/", follow_redirects=False)
 
-    assert response.status_code == 200
-    assert response.json() == {"message": "Bienvenue sur l'API who's quit"}
+    assert response.status_code == 307
+    assert response.headers["location"] == "/docs"

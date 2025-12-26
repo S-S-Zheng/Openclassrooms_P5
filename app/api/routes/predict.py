@@ -8,13 +8,11 @@ POST /predict ==> route.predict() ==> MLModel.predict()
 from fastapi import APIRouter, HTTPException
 
 from app.api.schemas import PredictionInput, PredictionOutput
-from app.ml.model import MLModel
+from app.ml.model import ml_model
 
-router = APIRouter(prefix="/predict", tags=["prediction"])
+router = APIRouter(prefix="/predict", tags=["Prediction"])
 
 # ===================== Initialisation du modele =========================
-
-ml_model = MLModel()
 
 
 @router.post("/", response_model=PredictionOutput)

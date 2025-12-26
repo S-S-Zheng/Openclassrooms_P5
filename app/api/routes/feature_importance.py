@@ -9,13 +9,11 @@ GET /feature-importance?top_n=5 ==> routes.feature_importance(top_n=5) \n
 from fastapi import APIRouter, HTTPException, Query
 
 from app.api.schemas import FeatureImportanceOutput
-from app.ml.model import MLModel
+from app.ml.model import ml_model
 
 router = APIRouter(prefix="/feature-importance", tags=["Feature Importance"])
 
 # ===================== Initialisation du modele =========================
-
-ml_model = MLModel()
 
 
 @router.get("/", response_model=FeatureImportanceOutput)
