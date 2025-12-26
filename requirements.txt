@@ -1,16 +1,16 @@
-# --- Interface ---
-fastapi>=0.124.2
-gradio>=4.0
-pydantic>=2.6
+# --- Serveur & Interface ---
+fastapi>=0.115.0
+uvicorn>=0.23.0
+pydantic>=2.6.0
+python-multipart>=0.0.9
+
 # --- Manipulation de données ---
-pandas>=2.3.3
-numpy>=2.3.4
-# --- Machine Learning & Inférence ---
-scikit-learn>=1.7.2
-catboost>=1.2.8
-shap>=0.50.0
-statsmodels>=0.14.5
-imblearn >=0.0
-# --- Base de données (si nécessaire pour loguer les prédictions) ---
+pandas>=2.1.0
+numpy>=1.24.0,<2.0.0
+
+# --- Inférence ---
+catboost>=1.2.7
+
+# --- Base de données ---
 sqlalchemy>=2.0
 psycopg2-binary>=2.9

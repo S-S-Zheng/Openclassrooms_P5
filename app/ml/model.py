@@ -8,17 +8,16 @@ from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
-import pandas as pd
-import shap
+import pandas as pd  # noqa: F401
 from catboost import CatBoostClassifier
 
 # Récupère/crée logger avec nom du module courant (ex: __name__="model")
 logger = logging.getLogger(__name__)
 
-# Chemins des fichiers à charger:
-model_cbm_path = "model/datas/results/model/best_model.cbm"
-features_names_path = "model/datas/results/features_names/features_names.pkl"
-threshold_path = "model/datas/results/threshold_opt/thresh_opt.pkl"
+# Chemin à charger:
+# __file__ : chemin du fichier en cours d'exe (model.py)
+# resolve(): convertie en chemin absolu + parent: donne le dossier du parent
+BASE_DIR = Path(__file__).resolve().parent / "model/datas/results"
 
 
 class MLModel:
@@ -26,13 +25,13 @@ class MLModel:
 
     def __init__(
         self,
-        model_path: str = model_cbm_path,
-        features_names_path: str = features_names_path,
-        threshold_path: str | None = threshold_path,
+        model_path: str = BASE_DIR / "model/best_model.cbm",
+        features_names_path: str = BASE_DIR / "features_names/features_names.pkl",
+        threshold_path: str | None = BASE_DIR / "threshold_opt/thresh_opt.pkl",
     ):
-        self.model_path = Path(model_path)
-        self.features_names_path = Path(features_names_path)
-        self.threshold_path = Path(threshold_path)
+        self.model_path = model_path
+        self.features_names_path = features_names_path
+        self.threshold_path = threshold_path
 
         self.model: CatBoostClassifier | None = (
             None  # Instance CBC ou None==> utilité doc
@@ -40,7 +39,27 @@ class MLModel:
         self.features_names: List[str] | None = None
         self.threshold: float | None = None
         self.classes = ["Employé", "Démissionaire"]  # Codé en dur
-        self.explainer = None
+
+    def get_model_info(self) -> dict:
+        """
+        Compile la métadatas du modèle
+
+        SORTIES:
+        model_type: str
+        n_features: int
+        classes: List[str]
+        threshold: float | None
+        """
+
+        if self.model is None:
+            raise ValueError("Modèle non chargé")
+
+        return {
+            "model_type": type(self.model).__name__,
+            "n_features": len(self.features_names),
+            "classes": self.classes,
+            "threshold": self.threshold,
+        }
 
     def load(self) -> None:
 
@@ -69,11 +88,6 @@ class MLModel:
         with open(self.threshold_path, "rb") as t:
             self.threshold = pickle.load(t)
             logger.info(f"Seuil chargé via {self.threshold_path}")
-
-        # charge SHAP
-        self.explainer_global = shap.TreeExplainer(self.model)
-        self.explainer_local = shap.TreeExplainer(self.model)
-        logger.info("Explainer SHAP chargé")
 
     def predict(self, features: List[float]) -> Tuple[float, float, str]:
         """
@@ -129,52 +143,6 @@ class MLModel:
 
         return top_features[:top_n]
 
-    def explain_global(self, features: pd.DataFrame | np.ndarray) -> None:
-        """
-        Réalise une beeswarm et scatter plot générale des features
-        features : DataFrame ou ndarray (n_samples, n_features)
-        """
 
-        if self.model is None:
-            raise ValueError("Modèle non chargé")
-
-        if not self.features_names:
-            raise ValueError("Liste des features non définie")
-
-        if isinstance(features, np.ndarray):
-            features = pd.DataFrame(features, columns=self.features_names)
-
-        # Beeswarm
-        shap_values_global = self.explainer_global(features)
-
-        shap.summary_plot(shap_values_global, features)
-
-        for feature in self.features_names:
-            shap.plots.scatter(shap_values_global[:, feature], features[feature])
-
-    def explain_local(
-        self, features: List[float] | np.ndarray, i: int = 0, max_display: int = 5
-    ):
-        """
-        Réalise une beeswarm et scatter plot générale des features
-        features : Liste des features (1D) ou ndarray (1, n_features)
-        i : index de l'observation à expliquer
-        max_display: nombre max de features a afficher dans le waterfall
-        """
-
-        if self.model is None:
-            raise ValueError("Modèle non chargé")
-
-        if not self.features_names:
-            raise ValueError("Liste des features non définie")
-
-        # Reshape liste features 1D en array 2D (1, n_features)
-        features = np.array(features).reshape(1, -1)
-
-        # Waterfall
-        shap_values_local = self.explainer_local(features)
-        shap.plots.waterfall(shap_values_local[i], max_display=max_display)
-
-
-# Instance globale
-model = MLModel()
+# Instance globale et unique
+ml_model = MLModel()

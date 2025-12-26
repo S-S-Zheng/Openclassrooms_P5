@@ -8,6 +8,8 @@ name: CD Pipeline
 on:
   workflow_run:
     workflows: ["CI Pipeline"]
+    branches:
+      - main
     types:
       - completed
 
@@ -41,25 +43,35 @@ jobs:
         # Evite d'alourdir HF et de subir les interdictions
         run: |
           rm -rf hf_deploy
-          mkdir -p hf_deploy/app/ml
+
+          # Créations des dossiers
+          mkdir -p hf_deploy/app/api/routes
+          mkdir -p hf_deploy/app/ml/model/datas/results/model/
+          mkdir -p hf_deploy/app/ml/model/datas/results/features_names/
+          mkdir -p hf_deploy/app/ml/model/datas/results/threshold_opt/
 
           # Fichiers racine
-          cp README.md hf_deploy/
           cp requirements.txt hf_deploy/
+          cp Dockerfile hf_deploy/
 
           # Init Python
           cp app/__init__.py hf_deploy/app/
           cp app/ml/__init__.py hf_deploy/app/ml/
+          cp app/api/__init__.py hf_deploy/app/api/
+          cp app/api/routes/__init__.py hf_deploy/app/api/routes/
 
           # Code ML
-          mkdir -p hf_deploy/app/ml/model/utils
+          # app dir
+          cp app/main.py hf_deploy/app/
+          # ml dir
           cp app/ml/model.py hf_deploy/app/ml/
-          cp app/ml/model/utils/* hf_deploy/app/ml/model/utils/
+          # api dir
+          cp app/api/schemas.py hf_deploy/app/api/
+          cp app/api/routes/feature_importance.py hf_deploy/app/api/routes/
+          cp app/api/routes/model_info.py hf_deploy/app/api/routes/
+          cp app/api/routes/predict.py hf_deploy/app/api/routes/
 
           # Artefacts ML (modele, features names, threshold opt)
-          mkdir -p hf_deploy/app/ml/model/datas/results/model/
-          mkdir -p hf_deploy/app/ml/model/datas/results/features_names/
-          mkdir -p hf_deploy/app/ml/model/datas/results/threshold_opt/
           cp app/ml/model/datas/results/model/best_model.cbm \
             hf_deploy/app/ml/model/datas/results/model/
           cp app/ml/model/datas/results/features_names/features_names.pkl \
@@ -83,7 +95,6 @@ jobs:
           git add .
           git commit -m "Deploiement automatique via GitHub Actions"
           git branch -M main
-
           git push hf main --force
       - name: Notify deployment
         if: success()
