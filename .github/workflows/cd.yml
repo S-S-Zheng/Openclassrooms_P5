@@ -78,6 +78,20 @@ jobs:
             hf_deploy/app/ml/model/datas/results/features_names/
           cp app/ml/model/datas/results/threshold_opt/thresh_opt.pkl \
             hf_deploy/app/ml/model/datas/results/threshold_opt/
+      - name: Mandatory README for HF
+        # Rédaction d'un README specifique pour HF qui l'oblige car sert
+        # de config. On créé un "heredoc" via << EOF ... EOF
+        run: |
+          cat << EOF > hf_deploy/README.md
+          ---
+          title: API for Technova Partners
+          sdk: docker
+          python-version: "3.11"
+          app-port: 7860
+          pinned: true
+          licence: mit
+          ---
+          EOF
       - name: Push to Hugging Face Space
         # Configure git et pousse le code vers HFSpaces
         # mail et user obligatoires pour github, emploie valeurs génériques
