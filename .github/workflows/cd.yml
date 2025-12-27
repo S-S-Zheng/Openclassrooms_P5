@@ -82,7 +82,7 @@ jobs:
         # Rédaction d'un README specifique pour HF qui l'oblige car sert
         # de config. On créé un "heredoc" via << EOF ... EOF
         run: |
-          cat << EOF" > hf_deploy/README.md
+          cat << EOF > hf_deploy/README.md
           ---
           title: API for Technova Partners
           sdk: docker
