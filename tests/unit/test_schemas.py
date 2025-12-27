@@ -18,11 +18,10 @@ from app.api.schemas import (
 
 
 # Happy path
-def test_prediction_input_valid():
-    data = {"features": [1.0, 2.5, 3.3]}
-    obj = PredictionInput(**data)
+def test_prediction_input_valid(fake_dict):
+    obj = PredictionInput(features=fake_dict)
 
-    assert obj.features == data["features"]
+    assert obj.features == fake_dict
 
 
 # features manquante
@@ -71,6 +70,9 @@ def test_feature_importance_output():
     data = {"top_features": [("age", 0.42), ("salary", -0.31)]}
     obj = FeatureImportanceOutput(**data)
 
+    assert isinstance(obj.top_features, list)
+    assert isinstance(obj.top_features[0][0], str)
+    assert isinstance(obj.top_features[0][1], float)
     assert len(obj.top_features) == 2
 
 
@@ -80,13 +82,15 @@ def test_feature_importance_output():
 def test_model_info_output():
     obj = ModelInfoOutput(
         model_type="CatBoostClassifier",
-        n_features=12,
+        n_features=5,
+        features_names=["f1", "f2", "f3", "f4", "f5"],
         classes=["Employé", "Démissionaire"],
         threshold=0.6,
     )
 
     assert obj.model_type == "CatBoostClassifier"
-    assert obj.n_features == 12
+    assert obj.n_features == 5
+    assert obj.features_names == ["f1", "f2", "f3", "f4", "f5"]
     assert obj.classes == ["Employé", "Démissionaire"]
     assert obj.threshold == 0.6
 

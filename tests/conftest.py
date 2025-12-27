@@ -17,16 +17,16 @@ from app.main import app
 # ========================== MOCK/FIXTURE==========================
 
 
-# dataset de test de 5 observations x 3 features
+# dict de test
 @pytest.fixture
-def sample_features():
-    return np.random.randn(5, 3)
+def fake_dict():
+    return {"f1": 0.1, "f2": 0.2, "f3": 0.3, "f4": 0.4, "f5": 0.5}
 
 
 # pickle.load
 @pytest.fixture
 def mock_pickle(monkeypatch):
-    fake_data = {"features_names": ["f1", "f2"], "thresh": 0.6}
+    fake_data = {"features_names": ["f1", "f2"], "thresh": np.array([0.6])}
 
     def fake_load(file):
         filename = str(file)
@@ -93,6 +93,7 @@ def mock_ml_model(monkeypatch):
             mock.get_model_info.return_value = {
                 "model_type": "CatBoostClassifier",
                 "n_features": len(["f1", "f2", "f3", "f4", "f5"]),
+                "features_names": ["f1", "f2", "f3", "f4", "f5"],
                 "classes": ["Employé", "Démissionaire"],
                 "threshold": 0.6,
             }

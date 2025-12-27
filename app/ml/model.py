@@ -5,10 +5,10 @@ Charge le modèle catboost optimisé pré-entrainé et gère ses commandes
 import logging  # sert a la gestion de logs de python
 import pickle
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
-import pandas as pd  # noqa: F401
+import pandas as pd
 from catboost import CatBoostClassifier
 
 # Récupère/crée logger avec nom du module courant (ex: __name__="model")
@@ -47,6 +47,7 @@ class MLModel:
         SORTIES:
         model_type: str
         n_features: int
+        features_names: List[str]
         classes: List[str]
         threshold: float | None
         """
@@ -57,6 +58,7 @@ class MLModel:
         return {
             "model_type": type(self.model).__name__,
             "n_features": len(self.features_names),
+            "features_names": self.features_names,
             "classes": self.classes,
             "threshold": self.threshold,
         }
@@ -80,6 +82,9 @@ class MLModel:
         with open(self.features_names_path, "rb") as fn:
             self.features_names = pickle.load(fn)
             logger.info(f"features chargées via {self.features_names_path}")
+        # Extirpe la liste des noms des features du pkl
+        if isinstance(self.features_names, dict):
+            self.features_names = list(self.features_names.values())[0]
 
         # Charge le seuil de validation
         if not self.threshold_path.exists():
@@ -88,13 +93,16 @@ class MLModel:
         with open(self.threshold_path, "rb") as t:
             self.threshold = pickle.load(t)
             logger.info(f"Seuil chargé via {self.threshold_path}")
+        # Vérifie et convertie la donnée en float
+        if isinstance(self.threshold, np.ndarray):
+            self.threshold = self.threshold.item()
 
-    def predict(self, features: List[float]) -> Tuple[float, float, str]:
+    def predict(self, features: Dict[str, float]) -> Tuple[float, float, str]:
         """
         Réalise une prédiction
 
         ENTREES:
-        features: Liste des features
+        features: Dictionnaire des features
         SORTIES:
         Tuple (prediction, confiance, classe)
         """
@@ -102,23 +110,31 @@ class MLModel:
         if self.model is None:
             raise ValueError("Modèle non chargé")
 
-        if self.features_names and len(features) != len(self.features_names):
-            raise ValueError(f"Nb features diff de {len(self.features_names)}")
+        # Tf en df
+        df = pd.DataFrame([features])
 
-        # Reshape liste features 1D en array 2D (1, n_features)
-        features_array = np.array(features).reshape(1, -1)
+        missing_features = set(self.features_names) - set(df.columns)
+        if missing_features:
+            raise ValueError(f"features manquantes:{missing_features}")
+
+        if len(df.columns) != len(self.features_names):
+            raise ValueError(
+                f"Nb features diff attendu={len(self.features_names)} obtenu={len(df.columns)}"
+            )
+
+        # Réarrangement de l'ordre des features suivant l'ordre appris par le modele
+        df = df[self.features_names]
 
         # Prédiction
-        probas = self.model.predict_proba(features_array)[0]
+        probas = self.model.predict_proba(df)[0]
         if self.threshold is None:
-            prediction = self.model.predict(features_array)[0]
+            prediction = int(self.model.predict(df)[0])
             confidence = float(np.max(probas))
         else:
-            confidence = probas[1]
+            confidence = float(probas[1])
             prediction = int(confidence >= self.threshold)
 
-        class_name = self.classes[int(prediction)]
-        # conversion float pour compatibilité json
+        class_name = str(self.classes[prediction])
         prediction_value = float(prediction)
 
         return prediction_value, confidence, class_name
