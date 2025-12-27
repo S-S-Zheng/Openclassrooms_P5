@@ -9,7 +9,7 @@ Modèles de schémas Pydantic pour les requêtes et réponses API
 | `/model-info`          | attributs du modèle              |
 """
 
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 # Imports
 from pydantic import BaseModel, Field
@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 # Schéma pour les entrées de prédiction
 # L'ordre des features est garantie par features_names dans MLModel
 class PredictionInput(BaseModel):
-    features: List[float]
+    features: Dict[str, float]
 
 
 # Schéma pour les sorties de prédiction
@@ -47,6 +47,7 @@ class FeatureImportanceOutput(BaseModel):
 class ModelInfoOutput(BaseModel):
     model_type: str
     n_features: int
+    features_names: List[str]
     classes: List[str]
     threshold: float | None
 

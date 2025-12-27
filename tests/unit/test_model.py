@@ -40,6 +40,7 @@ def test_get_model_info(mock_catboost, test_threshold):
     # le nom du type doit être celui de la classe mockée
     assert model_info["model_type"] == "CatBoostClassifier"
     assert model_info["n_features"] == 5
+    assert model_info["features_names"] == ["f1", "f2", "f3", "f4", "f5"]
     assert model_info["classes"] == ["Employé", "Démissionaire"]
     # Avec le décorateur on test les deux valeurs
     assert model_info["threshold"] == test_threshold
@@ -79,7 +80,9 @@ def test_load_model_success(tmp_path, mock_pickle, mock_catboost):
     ml.load()
 
     assert ml.model is not None
+    assert isinstance(ml.features_names, list)
     assert ml.features_names == ["f1", "f2"]
+    assert isinstance(ml.threshold, float)
     assert ml.threshold == 0.6
 
 
@@ -105,6 +108,8 @@ def test_load_model_failed(
 
 
 # =======================================================================
+
+
 # fichier liste des features absente
 def test_load_features_names_absent(tmp_path, caplog):
     """
@@ -120,6 +125,8 @@ def test_load_features_names_absent(tmp_path, caplog):
 
 
 # =======================================================================
+
+
 # fichier seuil de validation absent
 def test_load_threshold_absent(tmp_path, caplog):
     """
@@ -140,58 +147,56 @@ def test_load_threshold_absent(tmp_path, caplog):
 
 # test predict() (model nn chargé, nb features diff, seuil par défaut ou opt)
 # predict - CAS modele non chargé
-def test_predict_model_not_loaded():
+def test_predict_model_not_loaded(fake_dict):
 
     with pytest.raises(ValueError):
-        ml_model.predict([1.0, 2.0, 3.0])
+        ml_model.predict(fake_dict)
+
+
+# =======================================================================
+
+
+# predict - CAS features manquantes
+def test_predict_missing_features(mock_catboost, fake_dict):
+
+    ml_model.model = mock_catboost
+    ml_model.features_names = ["f1", "f2", "f6"]
+    ml_model.threshold = 0.6
+
+    with pytest.raises(ValueError, match="features manquantes"):
+        ml_model.predict(fake_dict)
 
 
 # =======================================================================
 
 
 # predict - CAS nombre de features différents
-def test_predict_wrong_feature_length(mock_catboost):
+def test_predict_unexpected_features(mock_catboost, fake_dict):
 
     ml_model.model = mock_catboost
     ml_model.features_names = ["f1", "f2", "f3"]
     ml_model.threshold = 0.6
 
-    with pytest.raises(ValueError):
-        ml_model.predict([1.0, 2.0])
+    with pytest.raises(ValueError, match="Nb features diff attendu=3 obtenu=5"):
+        ml_model.predict(fake_dict)
 
 
 # =======================================================================
 
 
-# predict - CAS seuil opt
-def test_predict_with_threshold(mock_catboost):
+# predict - CAS seuil de validation
+@pytest.mark.parametrize("thresh", [0.6, None])
+def test_predict_with_threshold(mock_catboost, thresh):
 
     ml_model.model = mock_catboost
     ml_model.features_names = ["f1", "f2", "f3"]
-    ml_model.threshold = 0.6
+    ml_model.threshold = thresh
 
-    pred, conf, label = ml_model.predict([1.0, 2.0, 3.0])
-
-    assert pred == 1.0
-    assert conf == 0.7
-    assert label == "Démissionaire"
-
-
-# =======================================================================
-
-
-# predict - CAS seuil par défaut
-def test_predict_without_threshold(mock_catboost):
-
-    ml_model.model = mock_catboost
-    ml_model.features_names = ["f1", "f2", "f3"]
-    ml_model.threshold = None
-
-    pred, conf, label = ml_model.predict([1.0, 2.0, 3.0])
+    pred, conf, class_name = ml_model.predict({"f1": 1.0, "f2": 2.0, "f3": 3.0})
 
     assert pred == 1.0
     assert conf == 0.7
-    assert label == "Démissionaire"
+    assert class_name == "Démissionaire"
 
 
 # ==================== GET FEATURE IMPORTANCE ================================

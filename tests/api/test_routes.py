@@ -8,10 +8,10 @@ Test des routes de l'API
 
 
 # Happy path
-def test_predict_success(client, mock_ml_model):
+def test_predict_success(client, mock_ml_model, fake_dict):
     mock_ml_model(should_fail=False)
 
-    payload = {"features": [1.0, 2.0, 3.0]}
+    payload = {"features": fake_dict}
     response = client.post("/predict", json=payload)
 
     assert response.status_code == 200
@@ -22,10 +22,10 @@ def test_predict_success(client, mock_ml_model):
 
 
 # Echec ValueError (requete invalide == 400 )
-def test_predict_value_error(client, mock_ml_model):
+def test_predict_value_error(client, mock_ml_model, fake_dict):
     mock_ml_model(should_fail=True, error_type="value")
 
-    payload = {"features": [1.0, 2.0, 3.0]}
+    payload = {"features": fake_dict}
     response = client.post("/predict", json=payload)
 
     assert response.status_code == 400
@@ -33,10 +33,10 @@ def test_predict_value_error(client, mock_ml_model):
 
 
 # Echec erreur critique interne (erreur serveur == 500)
-def test_predict_unexpected_error(client, mock_ml_model):
+def test_predict_unexpected_error(client, mock_ml_model, fake_dict):
     mock_ml_model(should_fail=True, error_type="exception")
 
-    payload = {"features": [1.0, 2.0, 3.0]}
+    payload = {"features": fake_dict}
     response = client.post("/predict", json=payload)
 
     assert response.status_code == 500
@@ -99,6 +99,7 @@ def test_model_info_success(client, mock_ml_model):
 
     assert data["model_type"] == "CatBoostClassifier"
     assert data["n_features"] == 5
+    assert data["features_names"] == ["f1", "f2", "f3", "f4", "f5"]
     assert data["classes"] == ["Employé", "Démissionaire"]
     assert data["threshold"] == 0.6
 
