@@ -6,10 +6,9 @@ GET /feature-importance?top_n=5 ==> routes.feature_importance(top_n=5) \n
 """
 
 # ====================== Imports ========================
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.api.schemas import FeatureImportanceOutput
-from app.ml.model import ml_model
 
 router = APIRouter(prefix="/feature-importance", tags=["Feature Importance"])
 
@@ -17,9 +16,17 @@ router = APIRouter(prefix="/feature-importance", tags=["Feature Importance"])
 
 
 @router.get("/", response_model=FeatureImportanceOutput)
-def feature_importance(top_n: int = Query(5, ge=1)):
+def feature_importance(request: Request, top_n: int = Query(5, ge=1)):
+    """
+    Endpoint de feature importance du modèle ML.
+    """
+    # Récupération de l'instance du modèle depuis le state de l'application
+    model_instance = getattr(request.app.state, "model", None)
+    if model_instance is None:
+        raise HTTPException(status_code=503, detail="Modèle non chargé sur le serveur")
+
     try:
-        top_features = ml_model.get_feature_importance(top_n=top_n)
+        top_features = model_instance.get_feature_importance(top_n=top_n)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as e:

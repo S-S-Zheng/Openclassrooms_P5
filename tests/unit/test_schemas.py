@@ -22,6 +22,8 @@ def test_prediction_input_valid(fake_dict):
     obj = PredictionInput(features=fake_dict)
 
     assert obj.features == fake_dict
+    assert isinstance(obj.features["f1"], str)
+    assert isinstance(obj.features["f3"], float)
 
 
 # features manquante
@@ -33,7 +35,9 @@ def test_prediction_input_missing_features():
 # type de feature incorrect
 def test_prediction_input_wrong_type():
     with pytest.raises(ValidationError):
-        PredictionInput(features=[1.0, "deux", 3.3])
+        PredictionInput(
+            features={"f1": "1.0", "f2": "2.0", "f3": [3.0], "f4": "4.0", "f5": "5.0"}
+        )
 
 
 # ===================== PredictionOutput =======================
@@ -65,15 +69,22 @@ def test_prediction_output_invalid_confidence(confidence):
 
 # ===================== feature importance =====================
 # On teste que top_features est bien une liste de tuples (str, float)
-# Pas de test d'erreur (with pytest.raises...) car couverture suffisamment stricte
-def test_feature_importance_output():
-    data = {"top_features": [("age", 0.42), ("salary", -0.31)]}
+# capable de convertir des données qui ressemblent au type ciblé
+def test_feature_importance_coercion():
+    # Ici, on envoie "0.42" au lieu de 0.42
+    data = {"top_features": [("age", "0.42")]}
     obj = FeatureImportanceOutput(**data)
 
-    assert isinstance(obj.top_features, list)
-    assert isinstance(obj.top_features[0][0], str)
+    # Pydantic doit avoir converti la string en float
+    assert obj.top_features[0][1] == 0.42
     assert isinstance(obj.top_features[0][1], float)
-    assert len(obj.top_features) == 2
+
+
+def test_feature_importance_invalid_structure():
+    # Test d'une structure corrompue (tuple trop long)
+    bad_data = {"top_features": [("age", 0.42, "extra_value")]}
+    with pytest.raises(ValidationError):
+        FeatureImportanceOutput(**bad_data)
 
 
 # ===================== Métadatas du modèle =====================
@@ -83,14 +94,18 @@ def test_model_info_output():
     obj = ModelInfoOutput(
         model_type="CatBoostClassifier",
         n_features=5,
-        features_names=["f1", "f2", "f3", "f4", "f5"],
+        feature_names=["f1", "f2", "f3", "f4", "f5"],
+        cat_features=["f1", "f2"],
+        num_features=["f3", "f4", "f5"],
         classes=["Employé", "Démissionaire"],
         threshold=0.6,
     )
 
     assert obj.model_type == "CatBoostClassifier"
     assert obj.n_features == 5
-    assert obj.features_names == ["f1", "f2", "f3", "f4", "f5"]
+    assert obj.feature_names == ["f1", "f2", "f3", "f4", "f5"]
+    assert obj.cat_features == ["f1", "f2"]
+    assert obj.num_features == ["f3", "f4", "f5"]
     assert obj.classes == ["Employé", "Démissionaire"]
     assert obj.threshold == 0.6
 

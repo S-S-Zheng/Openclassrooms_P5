@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from app.api.routes.feature_importance import router as feature_importance_router
 from app.api.routes.model_info import router as model_info_router
 from app.api.routes.predict import router as predict_router
-from app.ml.model import ml_model
+from app.ml.model import MLModel
 
 
 # assynccontextmanager est un décorateur qui permet de définir une fonction
@@ -22,7 +22,10 @@ from app.ml.model import ml_model
 async def lifespan(app: FastAPI):
     # Phase de démarrage: on charge une seule fois les données pour optimiser
     # la RAM
-    ml_model.load()
+    model_instance = MLModel()
+    model_instance.load()
+    # Stockage de l'app pour qu'il soit accessible partout
+    app.state.model = model_instance
     yield
     # Phase d'arrêt: Nettoyage possible, sauvegarde de données...
 

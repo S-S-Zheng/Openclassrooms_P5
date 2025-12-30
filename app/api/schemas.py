@@ -9,7 +9,8 @@ Modèles de schémas Pydantic pour les requêtes et réponses API
 | `/model-info`          | attributs du modèle              |
 """
 
-from typing import Dict, List, Tuple
+from datetime import datetime  # noqa:F401
+from typing import Dict, List, Tuple, Union
 
 # Imports
 from pydantic import BaseModel, Field
@@ -18,9 +19,34 @@ from pydantic import BaseModel, Field
 
 
 # Schéma pour les entrées de prédiction
-# L'ordre des features est garantie par features_names dans MLModel
+# L'ordre des features est garantie par feature_names dans MLModel
 class PredictionInput(BaseModel):
-    features: Dict[str, float]
+    features: Dict[str, Union[str, float]] = Field(
+        ...,
+        examples={
+            "age": 0.0,
+            "genre": "0",
+            "revenu_mensuel": 0.0,
+            "statut_marital": "0",
+            "poste": "0",
+            "annees_dans_le_poste_actuel": 0.0,
+            "heure_supplementaires": "0",
+            "augementation_salaire_precedente": 0.0,
+            "nombre_participation_pee": 0.0,
+            "nb_formations_suivies": 0.0,
+            "distance_domicile_travail": 0.0,
+            "niveau_education": 0.0,
+            "domaine_etude": "0",
+            "frequence_deplacement": "0",
+            "evolution_note": 0.0,
+            "stagnation_promo": 0.0,
+            "freq_chgt_poste": 0.0,
+            "revenu_mensuel_ajuste_par_nv_hierarchique": 0.0,
+            "revenu_mensuel_par_annee_xp": 0.0,
+            "freq_chgt_responsable": 0.0,
+            "satisfaction_globale_employee": 0.0,
+        },
+    )
 
 
 # Schéma pour les sorties de prédiction
@@ -37,7 +63,10 @@ class PredictionOutput(BaseModel):
 
 # Schéma pour les importances des features
 class FeatureImportanceOutput(BaseModel):
-    top_features: List[Tuple[str, float]]
+    top_features: List[Tuple[str, float]] = Field(
+        ...,
+        description="Liste décroiss des features les plus influentes (nom_feature, shapley)",
+    )
 
 
 # ========================= METADATAS ===========================
@@ -47,9 +76,11 @@ class FeatureImportanceOutput(BaseModel):
 class ModelInfoOutput(BaseModel):
     model_type: str
     n_features: int
-    features_names: List[str]
+    feature_names: List[str]
+    cat_features: List[str]
+    num_features: List[str]
     classes: List[str]
-    threshold: float | None
+    threshold: float
 
 
 # Erreur standardisée

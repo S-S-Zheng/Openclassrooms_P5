@@ -26,45 +26,23 @@ class MLModel:
     def __init__(
         self,
         model_path: str = BASE_DIR / "model/best_model.cbm",
-        features_names_path: str = BASE_DIR / "features_names/features_names.pkl",
+        feature_names_path: str = BASE_DIR / "feature_names/feature_names.pkl",
         threshold_path: str | None = BASE_DIR / "threshold_opt/thresh_opt.pkl",
     ):
         self.model_path = model_path
-        self.features_names_path = features_names_path
+        self.feature_names_path = feature_names_path
         self.threshold_path = threshold_path
 
         self.model: CatBoostClassifier | None = (
             None  # Instance CBC ou None==> utilité doc
         )
-        self.features_names: List[str] | None = None
+        self.feature_names: List[str] | None = None
+        self.cat_features: List[str] | None = None
+        self.num_features: List[str] | None = None
         self.threshold: float | None = None
         self.classes = ["Employé", "Démissionaire"]  # Codé en dur
 
-    def get_model_info(self) -> dict:
-        """
-        Compile la métadatas du modèle
-
-        SORTIES:
-        model_type: str
-        n_features: int
-        features_names: List[str]
-        classes: List[str]
-        threshold: float | None
-        """
-
-        if self.model is None:
-            raise ValueError("Modèle non chargé")
-
-        return {
-            "model_type": type(self.model).__name__,
-            "n_features": len(self.features_names),
-            "features_names": self.features_names,
-            "classes": self.classes,
-            "threshold": self.threshold,
-        }
-
     def load(self) -> None:
-
         # Charge le modele
         if not self.model_path.exists():
             logger.error(f"Le fichier modèle n'existe pas: {self.model_path}")
@@ -76,15 +54,24 @@ class MLModel:
         logger.info(f" Modèle chargé depuis {self.model_path}")
 
         # Charge la liste des features
-        if not self.features_names_path.exists():
-            logger.error(f"Fichier features absent: {self.features_names_path}")
-            return
-        with open(self.features_names_path, "rb") as fn:
-            self.features_names = pickle.load(fn)
-            logger.info(f"features chargées via {self.features_names_path}")
-        # Extirpe la liste des noms des features du pkl
-        if isinstance(self.features_names, dict):
-            self.features_names = list(self.features_names.values())[0]
+        if self.model.feature_names_:
+            self.feature_names = self.model.feature_names_
+            logger.info("features chargées depuis le modèle")
+        else:
+            # Cas où Pool n'a pas été utilisé, CBC garde en mémoire alors juste
+            # indices catégorielles sans feature_names_ (Fallback)
+            logger.warning("Le modèle n'a pas sauvegardés le nom des features")
+            if not self.feature_names_path.exists():
+                logger.error(f"Fichier features absent: {self.feature_names_path}")
+                return
+            with open(self.feature_names_path, "rb") as fn:
+                self.feature_names = pickle.load(fn)
+                logger.info(f"features chargées via {self.feature_names_path}")
+            # Extirpe la liste des noms des features du pkl
+            if isinstance(self.feature_names, dict):
+                self.feature_names = list(self.feature_names.values())[0]
+        # Charge le self des cat et num_features
+        self._identify_features()
 
         # Charge le seuil de validation
         if not self.threshold_path.exists():
@@ -97,13 +84,52 @@ class MLModel:
         if isinstance(self.threshold, np.ndarray):
             self.threshold = self.threshold.item()
 
+    def _identify_features(self):
+        """Identifie les colonnes numériques et catégorielles."""
+        cat_idx = self.model.get_cat_feature_indices()
+        self.cat_features = [self.feature_names[i] for i in cat_idx]
+        self.num_features = [
+            f for f in self.feature_names if f not in self.cat_features
+        ]
+
+    def get_model_info(self) -> dict:
+        """
+        Compile la métadatas du modèle
+
+        SORTIES:
+
+        model_type: str\n
+        n_features: int\n
+        feature_names: List[str]
+        cat_features: List[str] features catégorielles\n
+        num_features: List[str] features numériques\n
+        classes: List[str]\n
+        threshold: float | None\n
+        """
+
+        if self.model is None:
+            raise ValueError("Modèle non chargé")
+
+        return {
+            "model_type": type(self.model).__name__,
+            "n_features": len(self.feature_names),
+            "feature_names": self.feature_names,
+            "cat_features": self.cat_features,
+            "num_features": self.num_features,
+            "classes": self.classes,
+            "threshold": self.threshold,
+        }
+
     def predict(self, features: Dict[str, float]) -> Tuple[float, float, str]:
         """
         Réalise une prédiction
 
         ENTREES:
+
         features: Dictionnaire des features
+
         SORTIES:
+
         Tuple (prediction, confiance, classe)
         """
 
@@ -113,17 +139,15 @@ class MLModel:
         # Tf en df
         df = pd.DataFrame([features])
 
-        missing_features = set(self.features_names) - set(df.columns)
+        missing_features = set(self.feature_names) - set(df.columns)
         if missing_features:
             raise ValueError(f"features manquantes:{missing_features}")
 
-        if len(df.columns) != len(self.features_names):
-            raise ValueError(
-                f"Nb features diff attendu={len(self.features_names)} obtenu={len(df.columns)}"
-            )
+        if len(df.columns) != len(self.feature_names):
+            raise ValueError("Plus de features qu'attendues")
 
         # Réarrangement de l'ordre des features suivant l'ordre appris par le modele
-        df = df[self.features_names]
+        df = df[self.feature_names]
 
         # Prédiction
         probas = self.model.predict_proba(df)[0]
@@ -147,18 +171,18 @@ class MLModel:
         if self.model is None:
             raise ValueError("Modèle non chargé")
 
-        if not self.features_names:
+        if not self.feature_names:
             raise ValueError("Liste des features non définie")
 
         importances = self.model.get_feature_importance()
-        importances_dict = dict(zip(self.features_names, importances))
+        # On convertit explicitement chaque valeur en float Python natif ici
+        feature_importance = [
+            (name, float(score)) for name, score in zip(self.feature_names, importances)
+        ]
 
+        # Tri par valeur absolue décroissante
         top_features = sorted(
-            importances_dict.items(), key=lambda item: abs(item[1]), reverse=True
+            feature_importance, key=lambda item: abs(item[1]), reverse=True
         )
 
         return top_features[:top_n]
-
-
-# Instance globale et unique
-ml_model = MLModel()
