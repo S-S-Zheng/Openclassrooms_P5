@@ -18,12 +18,13 @@ from app.api.schemas import (
 
 
 # Happy path
-def test_prediction_input_valid(fake_dict):
-    obj = PredictionInput(features=fake_dict)
+def test_prediction_input_valid(func_sample):
+    obj = PredictionInput(features=func_sample["features"])
 
-    assert obj.features == fake_dict
-    assert isinstance(obj.features["f1"], str)
-    assert isinstance(obj.features["f3"], float)
+    assert obj.features == func_sample["features"]
+    assert isinstance(obj.features["age"], int)
+    assert isinstance(obj.features["genre"], str)
+    assert isinstance(obj.features["augementation_salaire_precedente"], float)
 
 
 # features manquante
@@ -35,9 +36,37 @@ def test_prediction_input_missing_features():
 # type de feature incorrect
 def test_prediction_input_wrong_type():
     with pytest.raises(ValidationError):
-        PredictionInput(
-            features={"f1": "1.0", "f2": "2.0", "f3": [3.0], "f4": "4.0", "f5": "5.0"}
-        )
+        PredictionInput(features={"age": [30], "genre": "m", "revenu_mensuel": 2000})
+
+
+# Champs obligatoires manquant
+@pytest.mark.parametrize("mandatory_features", ["age", "genre", "revenu_mensuel"])
+def test_prediction_mandatory_input_missing_business_rules(
+    mandatory_features, func_sample
+):
+    # On test que la suppr de la feature mandatory_features donne bien une erreur
+    payload = func_sample["features"]
+    payload.pop(mandatory_features)
+    with pytest.raises(ValidationError) as excinfo:
+        PredictionInput(features=payload)
+
+    assert f"Champ obligatoire manquant : {mandatory_features}" in str(excinfo.value)
+
+
+# Outliers
+@pytest.mark.parametrize(
+    "invalid_features, expected_error_msg",
+    [
+        ({"age": 150, "genre": "m", "revenu_mensuel": 2000}, "18 a 65 ans"),
+        ({"age": 30, "genre": "autre", "revenu_mensuel": 2000}, "m ou f"),
+        ({"age": 30, "genre": "m", "revenu_mensuel": 123}, "doit >1200"),
+    ],
+)
+def test_prediction_input_invalid_business_rules(invalid_features, expected_error_msg):
+    with pytest.raises(ValidationError) as excinfo:
+        PredictionInput(features=invalid_features)
+
+    assert expected_error_msg in str(excinfo.value)
 
 
 # ===================== PredictionOutput =======================

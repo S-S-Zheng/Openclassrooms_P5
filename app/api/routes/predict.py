@@ -1,6 +1,6 @@
 """
 Router pour le endpoint /predict, permet d'associer la requete API \n
-a la méthode de la classe MLModel tel quel:
+a la méthode de la classe MLModel tel quel:\n
 POST /predict ==> route.predict() ==> MLModel.predict()
 """
 
@@ -27,7 +27,7 @@ def predict(request: Request, payload: PredictionInput):
     try:
         prediction, confidence, class_name = model_instance.predict(payload.features)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

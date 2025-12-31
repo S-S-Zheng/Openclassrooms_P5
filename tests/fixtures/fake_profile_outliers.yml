@@ -1,0 +1,24 @@
+# Profil d'un employé avec des valeurs abérrantes
+expected_status: 422
+features:
+  age: 999
+  genre: "trois"
+  revenu_mensuel: 0.0
+  statut_marital: "en cours de traitement"
+  poste: "ange"
+  annees_dans_le_poste_actuel: 999999
+  heure_supplementaires: "beaucoup trop"
+  augementation_salaire_precedente: -9999.0
+  nombre_participation_pee: -9999
+  nb_formations_suivies: 9999
+  distance_domicile_travail: 999999.0
+  niveau_education: 9999
+  domaine_etude: "surnaturel"
+  frequence_deplacement: "constant"
+  evolution_note: 9999.0
+  stagnation_promo: -9999.9
+  freq_chgt_poste: -9999.9
+  revenu_mensuel_ajuste_par_nv_hierarchique: -9999.9
+  revenu_mensuel_par_annee_xp: -9999.9
+  freq_chgt_responsable: -9999.9
+  satisfaction_globale_employee: 9999

@@ -8,10 +8,10 @@ Test des routes de l'API
 
 
 # Happy path
-def test_predict_success(client, mock_ml_model, fake_dict):
+def test_predict_success(client, mock_ml_model, func_sample):
     mock_ml_model(should_fail=False)
 
-    payload = {"features": fake_dict}
+    payload = func_sample
     response = client.post("/predict/", json=payload)
 
     assert response.status_code == 200
@@ -22,32 +22,32 @@ def test_predict_success(client, mock_ml_model, fake_dict):
 
 
 # Cas d'erreur 503 (Modèle manquant dans le state)
-def test_predict_service_unavailable(client, fake_dict, mock_ml_model):
+def test_predict_service_unavailable(client, func_sample, mock_ml_model):
     mock_ml_model(is_missing=True)
 
-    payload = {"features": fake_dict}
+    payload = func_sample
     response = client.post("/predict/", json=payload)
 
     assert response.status_code == 503
     assert response.json()["detail"] == "Modèle non chargé sur le serveur"
 
 
-# Echec ValueError (requete invalide == 400 )
-def test_predict_value_error(client, mock_ml_model, fake_dict):
+# Echec ValueError (requete invalide == 422 )
+def test_predict_value_error(client, mock_ml_model, func_sample):
     mock_ml_model(should_fail=True, error_type="value")
 
-    payload = {"features": fake_dict}
+    payload = func_sample
     response = client.post("/predict/", json=payload)
 
-    assert response.status_code == 400
+    assert response.status_code == 422
     assert response.json()["detail"] == "Modèle non chargé"
 
 
 # Echec erreur critique interne (erreur serveur == 500)
-def test_predict_unexpected_error(client, mock_ml_model, fake_dict):
+def test_predict_unexpected_error(client, mock_ml_model, func_sample):
     mock_ml_model(should_fail=True, error_type="exception")
 
-    payload = {"features": fake_dict}
+    payload = func_sample
     response = client.post("/predict/", json=payload)
 
     assert response.status_code == 500
@@ -74,13 +74,13 @@ def test_feature_importance_success(client, mock_ml_model):
 
 # Tests redondant des erreurs mais obligatoire pour respecter % coverage
 # ==> on test le contrat de chaque endpoint != erreur métier
-# Echec ValueError (requete invalide == 400 )
+# Echec ValueError (requete invalide == 422 )
 def test_feature_importance_value_error(client, mock_ml_model):
     mock_ml_model(should_fail=True, error_type="value")
 
     response = client.get("/feature-importance?top_n=5")
 
-    assert response.status_code == 400
+    assert response.status_code == 422
     assert response.json()["detail"] == "Modèle non chargé"
 
 
@@ -99,7 +99,7 @@ def test_feature_importance_unexpected_error(client, mock_ml_model):
 
 # Happy path
 def test_model_info_success(client, mock_ml_model):
-    mock_ml_model(should_fail=False)
+    model = mock_ml_model(should_fail=False)
 
     response = client.get("/model-info")
 
@@ -107,21 +107,25 @@ def test_model_info_success(client, mock_ml_model):
     data = response.json()
 
     assert data["model_type"] == "CatBoostClassifier"
-    assert data["n_features"] == 5
-    assert data["feature_names"] == ["f1", "f2", "f3", "f4", "f5"]
-    assert data["cat_features"] == ["f1", "f2"]
-    assert data["num_features"] == ["f3", "f4", "f5"]
+    assert data["n_features"] == len(model.feature_names_)
+    assert data["feature_names"] == model.feature_names_
+    assert data["cat_features"] == ["genre", "statut_marital"]
+    assert data["num_features"] == [
+        "age",
+        "revenu_mensuel",
+        "augementation_salaire_precedente",
+    ]
     assert data["classes"] == ["Employé", "Démissionaire"]
     assert data["threshold"] == 0.6
 
 
-# Echec ValueError (requete invalide == 400 )
+# Echec ValueError (requete invalide == 422 )
 def test_model_info_value_error(client, mock_ml_model):
     mock_ml_model(should_fail=True, error_type="value")
 
     response = client.get("/model-info")
 
-    assert response.status_code == 400
+    assert response.status_code == 422
     assert response.json()["detail"] == "Modèle non chargé"
 
 

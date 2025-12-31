@@ -28,7 +28,7 @@ def feature_importance(request: Request, top_n: int = Query(5, ge=1)):
     try:
         top_features = model_instance.get_feature_importance(top_n=top_n)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

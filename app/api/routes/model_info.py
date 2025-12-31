@@ -29,7 +29,7 @@ def model_info(request: Request):
     try:
         info = model_instance.get_model_info()
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
