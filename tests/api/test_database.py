@@ -4,8 +4,33 @@ Tests sur les features qui interagissent avec la DB
 
 # imports
 
+import pytest
+from sqlalchemy import create_engine, inspect
+from sqlalchemy.orm import Session, sessionmaker  # noqa: F401
+
+from app import database
 from app.api.models_db import PredictionRecord
+from app.api.services.save_prediction_to_db import save_prediction
+from app.create_db import init_db
 from app.utils.hash_id import generate_feature_hash
+
+# ========================== DATABASE =======================
+
+
+def test_get_db(monkeypatch, TestingSession):
+    """Vérifie que get_db fournit une session valide et la ferme après."""
+
+    # On force database.SessionLocal à utiliser la session de test
+    monkeypatch.setattr(database, "SessionLocal", TestingSession)
+
+    # On teste le générateur (@contextmanager ==> on l'utilise avec 'with')
+    with database.get_db() as session:
+        assert isinstance(session, Session)
+        assert session.is_active
+
+    # On vérifie que la session est fermée
+    assert session.get_transaction() is None
+
 
 # =========================== PERSISTENCE ==========================
 
@@ -37,27 +62,95 @@ def test_get_prediction(client, mock_ml_model, func_sample, db_session_for_tests
 # ======================== REMPLISSAGE DES TABLES ===========================
 
 
+# Happy path
 def test_save_prediction(client, mock_ml_model, func_sample, db_session_for_tests):
     """Vérifie qu'une nouvelle prédiction est bien insérée en base."""
-    # 1. Configuration
     mock_ml_model(should_fail=False)
     payload = func_sample
+    expected_hash_id = generate_feature_hash(func_sample["features"])
 
-    # 2. Action : Premier appel
-    # L'API va utiliser sa propre session via Depends(get_db)
+    # Premier appel: l'API va utiliser sa propre session via Depends(get_db)
     response = client.post("/predict/", json=payload)
     assert response.status_code == 200
 
-    # 3. Vérification : La ligne existe en DB
-    # On vérifie avec NOTRE session de test si la donnée est là
-    # Comme l'API et le test partagent le même engine/transaction, le test voit l'insert
-    saved_pred = db_session_for_tests.query(PredictionRecord).first()
+    # On vérifie l'ID hashed
+    saved_pred = (
+        db_session_for_tests.query(PredictionRecord)
+        .filter_by(id=expected_hash_id)
+        .first()
+    )
 
     assert saved_pred is not None
-    assert saved_pred.class_name == "Démissionaire"
+    assert saved_pred.id == expected_hash_id
     assert saved_pred.inputs == payload["features"]
+    # La prédiction doit correspondre aux résultats du mock_ml_model.predict
+    assert saved_pred.class_name == "Démissionaire"
     assert saved_pred.prediction == 1
     assert saved_pred.confidence == 0.85
 
 
-# ======================
+# =====================================================
+
+
+# Erreur interne critique (code 500)
+def test_save_prediction_integrity_error(db_session_for_tests, func_sample):
+    """Vérifie que save_prediction lève une exception en cas de doublon (Clé Primaire)."""
+    features = func_sample["features"]
+    pred_data = (1, 0.85, "Démissionnaire")
+    # On injecte une premère fois la donnée qui doit bien se passer
+    save_prediction(db_session_for_tests, features, pred_data)
+
+    # On va tenter d'injecter une seconde fois la meme donnée (même ID) et provoqué code 500
+    with pytest.raises(Exception):
+        save_prediction(db_session_for_tests, features, pred_data)
+
+
+# ====================== INITIALISATION DB ===========================
+
+
+# Happy path
+def test_init_db(db_session_for_tests, TestingEngine):
+    """
+    On vérifie que l'appel à init_db ne provoque pas d'erreur
+    et que les tables sont bien présentes.
+    """
+    init_db(reset_tables=False, engine=TestingEngine)
+
+    # Vérification physique de la présence de la table via l'inspecteur
+    inspector = inspect(TestingEngine)
+    assert "predictions" in inspector.get_table_names()
+
+
+# =============================================================
+
+
+# Reset fonctionnel
+def test_init_db_reset_table(TestingEngine, func_sample, TestingSession):
+    """
+    On vérifie que les tables sont bien présentes sont bien nettoyées.
+    """
+    # On créée une session parallèle pour constituer une base non vide et
+    # s'assurer que la donnée est présente
+    with TestingSession() as temp_session:
+        save_prediction(temp_session, func_sample["features"], (0, 0.9, "Employé"))
+
+    init_db(reset_tables=True, engine=TestingEngine)
+
+    # Vérification physique de la présence de la table via l'inspecteur
+    inspector = inspect(TestingEngine)
+    assert "predictions" in inspector.get_table_names()
+
+
+# =================================================================
+
+# Echec de création de base
+
+
+def test_init_db_failed_init():
+    """
+    On vérifie que l'echec de connexion à la base renvoie une exception
+    """
+    fake_engine = create_engine("postgresql://user:wrong@localhost:9999/fake")
+
+    with pytest.raises(Exception):
+        init_db(reset_tables=False, engine=fake_engine)

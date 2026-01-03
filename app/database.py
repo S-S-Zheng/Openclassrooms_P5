@@ -20,9 +20,11 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 # ENGINE: point de départ de SQLAlchemy
 # Accepte 3 connexions simultanées et jusqu'à 10 en cas de pic temporaire
 # Vérif la connexion toujours valide (indispensable en Cloud)
-engine = create_engine(DATABASE_URL, pool_size=3, max_overflow=7, pool_pre_ping=True)
+base_engine = create_engine(
+    DATABASE_URL, pool_size=3, max_overflow=7, pool_pre_ping=True
+)
 # SessionLocal est une factory à sessions pour les routes
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=base_engine)
 # Base est la classe mère dont hériteront tous les modèles SQL
 Base = declarative_base()
 

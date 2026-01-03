@@ -204,10 +204,23 @@ def functionnal_profile(request):
 
 # hors docker l'adresse = localhost != dans docker = db ==> os.getenv()
 DATABASE_URL_TEST = os.getenv("DATABASE_URL_TEST")
+
 # ENGINE: point de départ de SQLAlchemy
-engine = create_engine(DATABASE_URL_TEST)
+test_engine = create_engine(DATABASE_URL_TEST)
+
+
+@pytest.fixture
+def TestingEngine():
+    return test_engine
+
+
 # SessionLocal est une factory à sessions pour les routes
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+
+@pytest.fixture
+def TestingSession():
+    return TestingSessionLocal
 
 
 # fixture lancer automatiquement et pour la durée de la session de test
@@ -215,16 +228,16 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 @pytest.fixture(scope="session", autouse=True)
 def init_db_for_tests():
     """Crée les tables une seule fois pour toute la session de test."""
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=test_engine)
     yield
     # Vide la base db à la fin de la session != rollback()
-    Base.metadata.drop_all(bind=engine)
+    Base.metadata.drop_all(bind=test_engine)
 
 
 @pytest.fixture
 def db_session_for_tests():
     """Fournit une session propre pour chaque test et nettoie après."""
-    connection = engine.connect()
+    connection = test_engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
 
@@ -232,5 +245,6 @@ def db_session_for_tests():
 
     session.close()
     # Annule l'insertion pour le test suivant plus efficace de delete
-    transaction.rollback()
+    if transaction.is_active:
+        transaction.rollback()
     connection.close()

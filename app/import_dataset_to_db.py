@@ -9,10 +9,9 @@ Peut se lancer en tant que tel.
 import pandas as pd
 from sqlalchemy.orm import Session  # noqa: F401
 
-from app.api.models_db import Base  # noqa: F401
 from app.api.models_db import PredictionRecord
 from app.create_db import init_db
-from app.database import SessionLocal, engine, get_db  # noqa: F401
+from app.database import Base, SessionLocal, base_engine, get_db  # noqa: F401
 from app.utils.hash_id import generate_feature_hash
 
 # =============================
