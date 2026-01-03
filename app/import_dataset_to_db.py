@@ -1,4 +1,10 @@
-from datetime import datetime
+"""
+Permet d'importer un fichier de dataset csv dans la base de données.\n
+Vérifie que le dataset n'a jamais été importer dans la base sinon l'ignore.\n
+Peut se lancer en tant que tel.
+"""
+
+# imports
 
 import pandas as pd
 from sqlalchemy.orm import Session  # noqa: F401
@@ -7,33 +13,31 @@ from app.api.models_db import Base  # noqa: F401
 from app.api.models_db import PredictionRecord
 from app.create_db import init_db
 from app.database import SessionLocal, engine, get_db  # noqa: F401
+from app.utils.hash_id import generate_feature_hash
+
+# =============================
 
 
 def import_csv(file_path: str):
     df = pd.read_csv(file_path)
-    import_date = datetime.now().strftime("%d%m%Y")
+    # Remplacer les NaN par None (car NaN n'est pas un JSON valide)
+    df = df.where(pd.notnull(df), None)
 
-    # Utilisation clef métier pour distinguer import données et requetes nouvelles
     with get_db() as db:
         print("Importation de données historique ...")
         new_records = []
-        for i, (_, row) in enumerate(df.iterrows()):
-            # Génération d'un ID unique par ligne : DDMMYYYY + index
-            # On s'assure que ça ne dépasse pas 12 caractères
-            unique_id = f"{import_date}{i:04d}"
+        for _, row in enumerate(df.iterrows()):
+            features = row.to_dict()
+            # on retire la target pour ne hasher que les features
+            target = features.pop("a_quitte_l_entreprise", None)
 
+            unique_id = generate_feature_hash(features)
             # Vérification si cet ID existe déjà
-            exists = (
-                db.query(PredictionRecord)
-                .filter(PredictionRecord.id == unique_id)
-                .first()
-            )
-            if exists:
+            if db.query(PredictionRecord).get(unique_id):
                 continue
 
             # Mapping des classes
-            target_value = row.get("a_quitte_l_entreprise")
-            if target_value == 0:
+            if target == 0:
                 name = "Démissionnaire"
                 pred_val = 0
             else:
@@ -42,7 +46,7 @@ def import_csv(file_path: str):
 
             record = PredictionRecord(
                 id=unique_id,
-                inputs=row.to_dict(),
+                inputs=features,
                 prediction=pred_val,
                 confidence=1.0,  # données historique donc forcement 1.0
                 class_name=name,

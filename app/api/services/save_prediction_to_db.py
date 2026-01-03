@@ -1,16 +1,23 @@
-import random
+"""
+Génère un id unique à partir du hashing sur les features et sauvegarde la requête
+"""
+
+# imports
 
 from sqlalchemy.orm import Session
 
 from app.api.models_db import PredictionRecord
+from app.utils.hash_id import generate_feature_hash
+
+# ==========================
 
 
 def save_prediction(db: Session, features: dict, pred_data: tuple):
     """Gère la génération d'ID et l'enregistrement."""
     prediction, confidence, class_name = pred_data
 
-    # On génère un ID unique de 10 chiffres
-    request_id = str(random.randint(0, 9999999999)).zfill(10)
+    # Generation ID de 12 caractères hexadecimaux
+    request_id = generate_feature_hash(features)
 
     new_record = PredictionRecord(
         id=request_id,

@@ -1,4 +1,11 @@
+"""
+Tests sur les features qui interagissent avec la DB
+"""
+
+# imports
+
 from app.api.models_db import PredictionRecord
+from app.utils.hash_id import generate_feature_hash
 
 # =========================== PERSISTENCE ==========================
 
@@ -7,7 +14,7 @@ def test_get_prediction(client, mock_ml_model, func_sample, db_session_for_tests
     """Vérifie que l'API utilise la DB si la donnée existe déjà."""
     # On insère manuellement une prédiction lié a fun_sample dans la db
     existing_pred = PredictionRecord(
-        id="9999999999",
+        id=generate_feature_hash(func_sample["features"]),
         inputs=func_sample["features"],
         prediction=0,
         confidence=0.99,
