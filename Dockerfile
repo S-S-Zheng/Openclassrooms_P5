@@ -4,9 +4,11 @@ FROM python:3.11-slim
 # Installation des dépendances système pour CatBoost
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
+    libpq-dev \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Création de l'utilisateur
+# Création de l'utilisateur (sys pas postgres)
 RUN useradd -m -u 1000 user
 USER user
 ENV PATH="/home/user/.local/bin:${PATH}"
@@ -24,4 +26,6 @@ COPY --chown=user . .
 EXPOSE 7860
 
 # Commande de lancement (adaptée à Hugging Face Spaces)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD python -m app.create_db && \
+    python -m app.import_dataset_to_db && \
+    uvicorn app.main:app --host 0.0.0.0 --port 7860

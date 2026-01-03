@@ -18,7 +18,7 @@ import pytest
     indirect=True,
 )
 def test_predict_functionnal(client, functionnal_profile):
-    # On récupère le nom du profil utilisé pour ce test précis
+    # On récupère le nom du profil utilisé pour ce test précis sinon on attribut 200
     expected_status = functionnal_profile.get("expected_status", 200)
     payload = {"features": functionnal_profile["features"]}
 

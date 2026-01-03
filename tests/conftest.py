@@ -2,6 +2,8 @@
 Configuration pytest et fixtures
 """
 
+import os
+
 # le noqa permet d'indiquer explicitement a isort d'ignorer les lignes
 import pickle  # noqa: F401
 from pathlib import Path
@@ -13,11 +15,16 @@ import pytest
 import yaml
 from catboost import CatBoostClassifier
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
+from app.database import Base, get_db
 from app.main import app
 from app.ml.model import MLModel
 
 # ========================== MOCK/FIXTURE==========================
+
+# =========================== DATAS ===========================
 
 
 # dict de test
@@ -38,6 +45,32 @@ def func_sample():
             "augementation_salaire_precedente": 10.0,
         }
     }
+
+
+@pytest.fixture(params=["service_unavailable", "value_error", "unexpected_error"])
+def error_responses(request):
+    # On définit un dictionnaire où les clés correspondent aux params
+    datas = {
+        "service_unavailable": {
+            "mock_args": {"is_missing": True},
+            "expected_status": 503,
+            "error_msg": "Modèle non chargé sur le serveur",
+        },
+        "value_error": {
+            "mock_args": {"should_fail": True, "error_type": "value"},
+            "expected_status": 422,
+            "error_msg": "Modèle non chargé",
+        },
+        "unexpected_error": {
+            "mock_args": {"should_fail": True, "error_type": "exception"},
+            "expected_status": 500,
+            "error_msg": "Erreur interne critique",
+        },
+    }
+    return datas[request.param]
+
+
+# ========================= UNIT ==========================
 
 
 # pickle.load (Fallback)
@@ -93,11 +126,16 @@ def mock_catboost(monkeypatch):
 
 # Client FastAPI
 @pytest.fixture
-def client():
+def client(db_session_for_tests):
+    # Injection de la session db
+    app.dependency_overrides[get_db] = lambda: db_session_for_tests
     # Le "with" déclenche le lifespan (startup)
-    with TestClient(app) as c:
-        yield c
+    with TestClient(app) as test_client:
+        # Attentio: ce qui est sur la même ligne que yield et envoyée au test
+        # ce qui est différent de ce qui est après la ligne yield qui s'exe à la fin du test
+        yield test_client
     # À la sortie du "with", le lifespan (shutdown) est déclenché
+    app.dependency_overrides.clear()
 
 
 # MLModel
@@ -160,3 +198,39 @@ def functionnal_profile(request):
         data = yaml.safe_load(f)
         data["_profile_name"] = profile_name
         return data
+
+
+# ========================= DB ==============================
+
+# hors docker l'adresse = localhost != dans docker = db ==> os.getenv()
+DATABASE_URL_TEST = os.getenv("DATABASE_URL_TEST")
+# ENGINE: point de départ de SQLAlchemy
+engine = create_engine(DATABASE_URL_TEST)
+# SessionLocal est une factory à sessions pour les routes
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+# fixture lancer automatiquement et pour la durée de la session de test
+# Pour eviter de recréer les tables a chaque test les utilisant
+@pytest.fixture(scope="session", autouse=True)
+def init_db_for_tests():
+    """Crée les tables une seule fois pour toute la session de test."""
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Vide la base db à la fin de la session != rollback()
+    Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture
+def db_session_for_tests():
+    """Fournit une session propre pour chaque test et nettoie après."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = TestingSessionLocal(bind=connection)
+
+    yield session
+
+    session.close()
+    # Annule l'insertion pour le test suivant plus efficace de delete
+    transaction.rollback()
+    connection.close()

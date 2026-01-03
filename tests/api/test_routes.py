@@ -21,37 +21,14 @@ def test_predict_success(client, mock_ml_model, func_sample):
     assert data["class_name"] == "Démissionaire"
 
 
-# Cas d'erreur 503 (Modèle manquant dans le state)
-def test_predict_service_unavailable(client, func_sample, mock_ml_model):
-    mock_ml_model(is_missing=True)
+def test_predict_errors(client, mock_ml_model, func_sample, error_responses):
+    mock_ml_model(**error_responses["mock_args"])
 
     payload = func_sample
     response = client.post("/predict/", json=payload)
 
-    assert response.status_code == 503
-    assert response.json()["detail"] == "Modèle non chargé sur le serveur"
-
-
-# Echec ValueError (requete invalide == 422 )
-def test_predict_value_error(client, mock_ml_model, func_sample):
-    mock_ml_model(should_fail=True, error_type="value")
-
-    payload = func_sample
-    response = client.post("/predict/", json=payload)
-
-    assert response.status_code == 422
-    assert response.json()["detail"] == "Modèle non chargé"
-
-
-# Echec erreur critique interne (erreur serveur == 500)
-def test_predict_unexpected_error(client, mock_ml_model, func_sample):
-    mock_ml_model(should_fail=True, error_type="exception")
-
-    payload = func_sample
-    response = client.post("/predict/", json=payload)
-
-    assert response.status_code == 500
-    assert response.json()["detail"] == "Erreur interne critique"
+    assert response.status_code == error_responses["expected_status"]
+    assert response.json()["detail"] == error_responses["error_msg"]
 
 
 # ========================= FEATURE IMPORTANCE ==========================
@@ -72,26 +49,13 @@ def test_feature_importance_success(client, mock_ml_model):
     assert isinstance(data["top_features"][0][1], float)
 
 
-# Tests redondant des erreurs mais obligatoire pour respecter % coverage
-# ==> on test le contrat de chaque endpoint != erreur métier
-# Echec ValueError (requete invalide == 422 )
-def test_feature_importance_value_error(client, mock_ml_model):
-    mock_ml_model(should_fail=True, error_type="value")
+def test_feature_importance_errors(client, mock_ml_model, error_responses):
+    mock_ml_model(**error_responses["mock_args"])
 
     response = client.get("/feature-importance?top_n=5")
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "Modèle non chargé"
-
-
-# Echec erreur critique interne (erreur serveur == 500)
-def test_feature_importance_unexpected_error(client, mock_ml_model):
-    mock_ml_model(should_fail=True, error_type="exception")
-
-    response = client.get("/feature-importance?top_n=5")
-
-    assert response.status_code == 500
-    assert response.json()["detail"] == "Erreur interne critique"
+    assert response.status_code == error_responses["expected_status"]
+    assert response.json()["detail"] == error_responses["error_msg"]
 
 
 # ========================= METADATAS ===========================
@@ -119,21 +83,10 @@ def test_model_info_success(client, mock_ml_model):
     assert data["threshold"] == 0.6
 
 
-# Echec ValueError (requete invalide == 422 )
-def test_model_info_value_error(client, mock_ml_model):
-    mock_ml_model(should_fail=True, error_type="value")
+def test_model_info_errors(client, mock_ml_model, error_responses):
+    mock_ml_model(**error_responses["mock_args"])
 
     response = client.get("/model-info")
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "Modèle non chargé"
-
-
-# Echec erreur critique interne (erreur serveur == 500)
-def test_model_info_unexpected_error(client, mock_ml_model):
-    mock_ml_model(should_fail=True, error_type="exception")
-
-    response = client.get("/model-info")
-
-    assert response.status_code == 500
-    assert response.json()["detail"] == "Erreur interne critique"
+    assert response.status_code == error_responses["expected_status"]
+    assert response.json()["detail"] == error_responses["error_msg"]

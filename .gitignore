@@ -21,6 +21,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.env.test
 
 # Python
 __pycache__/
@@ -53,3 +54,8 @@ model/**/catboost_info/
 
 # Pytest
 .pytest*
+
+# Autres
+db_connection_test.py
+htmlcov
+.coverage
