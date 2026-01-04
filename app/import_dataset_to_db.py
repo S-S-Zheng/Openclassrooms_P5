@@ -25,23 +25,23 @@ def import_csv(file_path: str):
     with get_db() as db:
         print("Importation de données historique ...")
         new_records = []
-        for _, row in enumerate(df.iterrows()):
+        for _, row in df.iterrows():
             features = row.to_dict()
             # on retire la target pour ne hasher que les features
             target = features.pop("a_quitte_l_entreprise", None)
 
             unique_id = generate_feature_hash(features)
             # Vérification si cet ID existe déjà
-            if db.query(PredictionRecord).get(unique_id):
+            if db.get(PredictionRecord, unique_id):
                 continue
 
             # Mapping des classes
-            if target == 0:
+            if target == 1:
                 name = "Démissionnaire"
-                pred_val = 0
+                pred_val = 1
             else:
                 name = "Employé"
-                pred_val = 1
+                pred_val = 0
 
             record = PredictionRecord(
                 id=unique_id,

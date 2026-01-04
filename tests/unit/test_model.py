@@ -21,7 +21,7 @@ def test_init(ml_model):
     assert ml_model.cat_features is None
     assert ml_model.num_features is None
     assert ml_model.threshold is None
-    assert ml_model.classes == ["Employé", "Démissionaire"]
+    assert ml_model.classes == ["Employé", "Démissionnaire"]
 
 
 # ======================== GET MODEL INFO =================================
@@ -38,7 +38,7 @@ def test_get_model_info(mock_catboost, test_threshold, ml_model):
     ml_model.num_features = [
         name for name in ml_model.feature_names if name not in ml_model.cat_features
     ]
-    ml_model.classes = ["Employé", "Démissionaire"]
+    ml_model.classes = ["Employé", "Démissionnaire"]
     ml_model.threshold = test_threshold
 
     model_info = ml_model.get_model_info()
@@ -51,7 +51,7 @@ def test_get_model_info(mock_catboost, test_threshold, ml_model):
     assert model_info["feature_names"] == ["f1", "f2", "f3", "f4", "f5"]
     assert model_info["cat_features"] == ["f1", "f2"]
     assert model_info["num_features"] == ["f3", "f4", "f5"]
-    assert model_info["classes"] == ["Employé", "Démissionaire"]
+    assert model_info["classes"] == ["Employé", "Démissionnaire"]
     # Avec le décorateur on test les deux valeurs
     assert model_info["threshold"] == test_threshold
 
@@ -293,7 +293,7 @@ def test_predict_with_threshold(mock_catboost, thresh, ml_model):
 
     assert pred == 1.0
     assert conf == 0.7
-    assert class_name == "Démissionaire"
+    assert class_name == "Démissionnaire"
     assert isinstance(args[0], pd.DataFrame)
     assert list(args[0].columns) == ml_model.feature_names
 

@@ -70,6 +70,20 @@ def error_responses(request):
     return datas[request.param]
 
 
+# Charge des profils fonctionnels
+@pytest.fixture
+def functionnal_profile(request):
+    """Charge dynamiquement un profil YAML selon le paramètre fourni."""
+    # 'request.param' contiendra le nom du profil (ex: 'happy_path')
+    profile_name = request.param
+    file_path = Path(__file__).parent / "fixtures" / f"fake_profile_{profile_name}.yml"
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+        data["_profile_name"] = profile_name
+        return data
+
+
 # ========================= UNIT ==========================
 
 
@@ -160,7 +174,7 @@ def mock_ml_model(func_sample):
             shap = [0.9, 0.6, 0.55, 0.53, 0.5]
             importance = list(zip(features, shap))
 
-            mock.predict.return_value = (1.0, 0.85, "Démissionaire")
+            mock.predict.return_value = (1.0, 0.85, "Démissionnaire")
             mock.get_feature_importance.return_value = sorted(
                 importance, key=lambda x: x[1], reverse=True
             )
@@ -175,7 +189,7 @@ def mock_ml_model(func_sample):
                     "revenu_mensuel",
                     "augementation_salaire_precedente",
                 ],
-                "classes": ["Employé", "Démissionaire"],
+                "classes": ["Employé", "Démissionnaire"],
                 "threshold": 0.6,
             }
 
@@ -184,20 +198,6 @@ def mock_ml_model(func_sample):
         return mock
 
     return _factory
-
-
-# Charge des profils fonctionnels
-@pytest.fixture
-def functionnal_profile(request):
-    """Charge dynamiquement un profil YAML selon le paramètre fourni."""
-    # 'request.param' contiendra le nom du profil (ex: 'happy_path')
-    profile_name = request.param
-    file_path = Path(__file__).parent / "fixtures" / f"fake_profile_{profile_name}.yml"
-
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-        data["_profile_name"] = profile_name
-        return data
 
 
 # ========================= DB ==============================

@@ -40,7 +40,7 @@ class MLModel:
         self.cat_features: List[str] | None = None
         self.num_features: List[str] | None = None
         self.threshold: float | None = None
-        self.classes = ["Employé", "Démissionaire"]  # Codé en dur
+        self.classes = ["Employé", "Démissionnaire"]  # Codé en dur
 
     def load(self) -> None:
         # Charge le modele

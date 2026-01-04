@@ -33,4 +33,4 @@ def test_predict_functionnal(client, functionnal_profile):
         json_data = response.json()
         assert "prediction" in json_data
         assert 0 <= json_data["confidence"] <= 1.0
-        assert json_data["class_name"] in ["Employé", "Démissionaire"]
+        assert json_data["class_name"] in ["Employé", "Démissionnaire"]

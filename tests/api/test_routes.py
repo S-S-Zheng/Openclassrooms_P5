@@ -18,7 +18,7 @@ def test_predict_success(client, mock_ml_model, func_sample):
     data = response.json()
     assert data["prediction"] == 1.0
     assert data["confidence"] == 0.85
-    assert data["class_name"] == "Démissionaire"
+    assert data["class_name"] == "Démissionnaire"
 
 
 def test_predict_errors(client, mock_ml_model, func_sample, error_responses):
@@ -79,7 +79,7 @@ def test_model_info_success(client, mock_ml_model):
         "revenu_mensuel",
         "augementation_salaire_precedente",
     ]
-    assert data["classes"] == ["Employé", "Démissionaire"]
+    assert data["classes"] == ["Employé", "Démissionnaire"]
     assert data["threshold"] == 0.6
 
 

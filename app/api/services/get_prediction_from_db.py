@@ -4,6 +4,7 @@ Interroge la base de donnée suivant l'ID afin s'assurer que la requete n'a jama
 
 # imports
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.models_db import PredictionRecord
@@ -17,4 +18,6 @@ def get_prediction(db: Session, features: dict):
     # On recalcul le hash des features recues
     feature_id = generate_feature_hash(features)
 
-    return db.query(PredictionRecord).filter(PredictionRecord.id == feature_id).first()
+    return db.scalars(
+        select(PredictionRecord).where(PredictionRecord.id == feature_id)
+    ).first()

@@ -77,7 +77,7 @@ def test_prediction_output_valid():
     out = PredictionOutput(
         prediction=1.0,
         confidence=0.85,
-        class_name="Démissionaire",
+        class_name="Démissionnaire",
     )
 
     assert out is not None
@@ -92,7 +92,7 @@ def test_prediction_output_invalid_confidence(confidence):
         PredictionOutput(
             prediction=1.0,
             confidence=confidence,
-            class_name="Démissionaire",
+            class_name="Démissionnaire",
         )
 
 
@@ -126,7 +126,7 @@ def test_model_info_output():
         feature_names=["f1", "f2", "f3", "f4", "f5"],
         cat_features=["f1", "f2"],
         num_features=["f3", "f4", "f5"],
-        classes=["Employé", "Démissionaire"],
+        classes=["Employé", "Démissionnaire"],
         threshold=0.6,
     )
 
@@ -135,7 +135,7 @@ def test_model_info_output():
     assert obj.feature_names == ["f1", "f2", "f3", "f4", "f5"]
     assert obj.cat_features == ["f1", "f2"]
     assert obj.num_features == ["f3", "f4", "f5"]
-    assert obj.classes == ["Employé", "Démissionaire"]
+    assert obj.classes == ["Employé", "Démissionnaire"]
     assert obj.threshold == 0.6
 
 

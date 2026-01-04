@@ -4,14 +4,16 @@ Tests sur les features qui interagissent avec la DB
 
 # imports
 
+import pandas as pd
 import pytest
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, select
 from sqlalchemy.orm import Session, sessionmaker  # noqa: F401
 
 from app import database
 from app.api.models_db import PredictionRecord
 from app.api.services.save_prediction_to_db import save_prediction
 from app.create_db import init_db
+from app.import_dataset_to_db import import_csv
 from app.utils.hash_id import generate_feature_hash
 
 # ========================== DATABASE =======================
@@ -73,18 +75,15 @@ def test_save_prediction(client, mock_ml_model, func_sample, db_session_for_test
     response = client.post("/predict/", json=payload)
     assert response.status_code == 200
 
-    # On vérifie l'ID hashed
-    saved_pred = (
-        db_session_for_tests.query(PredictionRecord)
-        .filter_by(id=expected_hash_id)
-        .first()
-    )
+    saved_pred = db_session_for_tests.scalars(
+        select(PredictionRecord).filter_by(id=expected_hash_id)
+    ).first()
 
     assert saved_pred is not None
     assert saved_pred.id == expected_hash_id
     assert saved_pred.inputs == payload["features"]
     # La prédiction doit correspondre aux résultats du mock_ml_model.predict
-    assert saved_pred.class_name == "Démissionaire"
+    assert saved_pred.class_name == "Démissionnaire"
     assert saved_pred.prediction == 1
     assert saved_pred.confidence == 0.85
 
@@ -143,9 +142,8 @@ def test_init_db_reset_table(TestingEngine, func_sample, TestingSession):
 
 # =================================================================
 
+
 # Echec de création de base
-
-
 def test_init_db_failed_init():
     """
     On vérifie que l'echec de connexion à la base renvoie une exception
@@ -154,3 +152,49 @@ def test_init_db_failed_init():
 
     with pytest.raises(Exception):
         init_db(reset_tables=False, engine=fake_engine)
+
+
+# ======================= IMPORTATION DE DONNEES =======================
+
+
+# Happy path
+def test_import_csv_success(monkeypatch, tmp_path, TestingSession, TestingEngine):
+    """
+    Vérifie que le CSV est bien lu et inséré en base avec les bons IDs
+    """
+    # faux chemin avec fichier csv
+    fake_file = tmp_path / "hist_datas"
+    fake_file.mkdir()
+    fake_file_path = fake_file / "test_data.csv"
+    fake_data = {
+        "features": {
+            "age": [20, 50],
+            "genre": ["f", "m"],
+            "revenue_mensuel": [1500, 8000],
+            "a_quitte_l_entreprise": [1, 0],
+        }
+    }
+    pd.DataFrame(fake_data["features"]).to_csv(fake_file_path, index=False)
+
+    # On court-circuite get_db
+    monkeypatch.setattr(database, "SessionLocal", TestingSession)
+
+    # On importe
+    import_csv(str(fake_file_path))
+
+    # On ouvre une autre session avec TestingEngine pour vérifier le nombre d'observation
+    # on ouvre une nouvelle session pour éviter un eventuel "session is closed"
+    Session = sessionmaker(bind=TestingEngine)
+    with Session() as session:
+        records = session.scalars(select(PredictionRecord)).all()
+
+        assert len(records) == len(fake_data["features"]["a_quitte_l_entreprise"])
+
+        # Vérification du mapping
+        classification = session.scalars(
+            select(PredictionRecord).filter_by(class_name="Démissionnaire")
+        ).first()
+
+        assert classification is not None
+        assert classification.prediction == 1
+        assert classification.confidence == 1.0
