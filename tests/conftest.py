@@ -6,11 +6,13 @@ import os
 
 # le noqa permet d'indiquer explicitement a isort d'ignorer les lignes
 import pickle  # noqa: F401
+import urllib.parse  # Import indispensable pour les caractères spéciaux
 from pathlib import Path
 from unittest.mock import create_autospec  # noqa: F401
 from unittest.mock import MagicMock
 
 import numpy as np
+import pandas as pd
 import pytest
 import yaml
 from catboost import CatBoostClassifier
@@ -18,7 +20,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.database import Base, get_db
+from app.db.base import Base
+from app.db.database import get_db
 from app.main import app
 from app.ml.model import MLModel
 
@@ -82,6 +85,26 @@ def functionnal_profile(request):
         data = yaml.safe_load(f)
         data["_profile_name"] = profile_name
         return data
+
+
+# fake csv
+@pytest.fixture
+def fake_csv(tmp_path):
+    # faux chemin avec fichier csv
+    fake_file = tmp_path / "hist_datas"
+    fake_file.mkdir()
+    fake_file_path = fake_file / "test_data.csv"
+    fake_data = {
+        "features": {
+            "age": [20, 50],
+            "genre": ["f", "m"],
+            "revenue_mensuel": [1500, 8000],
+            "a_quitte_l_entreprise": [1, 0],
+        }
+    }
+    pd.DataFrame(fake_data["features"]).to_csv(fake_file_path, index=False)
+
+    return fake_file_path, fake_data
 
 
 # ========================= UNIT ==========================
@@ -174,7 +197,7 @@ def mock_ml_model(func_sample):
             shap = [0.9, 0.6, 0.55, 0.53, 0.5]
             importance = list(zip(features, shap))
 
-            mock.predict.return_value = (1.0, 0.85, "Démissionnaire")
+            mock.predict.return_value = (1, 0.85, "Démissionnaire")
             mock.get_feature_importance.return_value = sorted(
                 importance, key=lambda x: x[1], reverse=True
             )
@@ -203,7 +226,17 @@ def mock_ml_model(func_sample):
 # ========================= DB ==============================
 
 # hors docker l'adresse = localhost != dans docker = db ==> os.getenv()
-DATABASE_URL_TEST = os.getenv("DATABASE_URL_TEST")
+# ====================== Variables d'environnement ==============
+# Récupération sécurisée
+db_user_test = os.getenv("POSTGRES_USER_TEST")
+db_pass_test = urllib.parse.quote_plus(os.getenv("POSTGRES_PASSWORD_TEST", ""))
+db_host_test = os.getenv("POSTGRES_HOST_TEST")
+db_port_test = os.getenv("POSTGRES_PORT_TEST")
+db_name_test = os.getenv("POSTGRES_DB_TEST")
+
+#
+DATABASE_URL_TEST = f"postgresql://{db_user_test}:{db_pass_test}@{db_host_test}:{db_port_test}/{db_name_test}"  # noqa: E501
+# DATABASE_URL_TEST = os.getenv("DATABASE_URL_TEST")
 
 # ENGINE: point de départ de SQLAlchemy
 test_engine = create_engine(DATABASE_URL_TEST)
@@ -248,3 +281,15 @@ def db_session_for_tests():
     if transaction.is_active:
         transaction.rollback()
     connection.close()
+
+
+# Evite au routes d'utiliser la session normale plutot que le test à cause de Depend(get_db)
+# ==> les client.post, get etc seront automatiquement envoyées vers le test.
+@pytest.fixture(autouse=True)
+def override_db(db_session_for_tests):
+    """
+    emplace get_db par la session de test pour TOUS les tests de ce fichier
+    """
+    app.dependency_overrides[get_db] = lambda: db_session_for_tests
+    yield
+    app.dependency_overrides.clear()

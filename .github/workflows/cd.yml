@@ -32,6 +32,11 @@ jobs:
           HF_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
           HF_USERNAME: ${{ secrets.HUGGINGFACE_USERNAME }}
           HF_SPACE_NAME: ${{ secrets.HUGGINGFACE_SPACE_NAME }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,10 +50,12 @@ jobs:
           rm -rf hf_deploy
 
           # Créations des dossiers
-          mkdir -p hf_deploy/app/api/routes
+          mkdir -p hf_deploy/app/api/routes/
           mkdir -p hf_deploy/app/ml/model/datas/results/model/
           mkdir -p hf_deploy/app/ml/model/datas/results/features_names/
           mkdir -p hf_deploy/app/ml/model/datas/results/threshold_opt/
+          mkdir -p hf_deploy/app/db/actions/
+          mkdir -p hf_deploy/app/utils/
 
           # Fichiers racine
           cp requirements.txt hf_deploy/
@@ -56,17 +63,35 @@ jobs:
 
           # Init Python
           cp app/__init__.py hf_deploy/app/
-          cp app/ml/__init__.py hf_deploy/app/ml/
           cp app/api/__init__.py hf_deploy/app/api/
           cp app/api/routes/__init__.py hf_deploy/app/api/routes/
+          cp app/ml/__init__.py hf_deploy/app/ml/
+          cp app/db/__init__.py hf_deploy/app/utils/
+          cp app/db/actions/__init__.py hf_deploy/app/db/actions/
+          cp app/utils/__init__.py hf_deploy/app/utils/
 
-          # Code ML
-          # app dir
+          # Dir app
           cp app/main.py hf_deploy/app/
-          # ml dir
+
+          # Dir utils
+          cp app/utils/hash_id.py hf_deploy/app/utils/
+
+          # Dir ml
           cp app/ml/model.py hf_deploy/app/ml/
-          # api dir
+
+          # Dir db
+          cp app/db/base.py hf_deploy/app/db/
+          cp app/db/create_db.py hf_deploy/app/db/
+          cp app/db/database.py hf_deploy/app/db/
+          cp app/db/import_dataset_to_db.py hf_deploy/app/db/
+          cp app/db/models_db.py hf_deploy/app/db/
+          # Sub-Dir db/actions
+          cp app/db/actions/get_prediction_drom_db.py hf_deploy/app/db/actions
+          cp app/db/actions/save_prediction_to_db.py hf_deploy/app/db/actions
+
+          # Dir api
           cp app/api/schemas.py hf_deploy/app/api/
+          # Sub-Dir api/routes
           cp app/api/routes/feature_importance.py hf_deploy/app/api/routes/
           cp app/api/routes/model_info.py hf_deploy/app/api/routes/
           cp app/api/routes/predict.py hf_deploy/app/api/routes/

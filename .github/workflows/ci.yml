@@ -57,16 +57,21 @@ jobs:
     # Oblige la validation de lint avant
     needs: lint
     env:
-          POSTGRES_USER_TEST: ${{ secrets.POSTGRES_USER_TEST }}
-          POSTGRES_PASSWORD_TEST: ${{ secrets.POSTGRES_PASSWORD_TEST }}
-          POSTGRES_DB_TEST: ${{ secrets.POSTGRES_DB_TEST }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_HOST_TEST: ${{ secrets.POSTGRES_HOST_TEST }}
-          POSTGRES_PORT_TEST: ${{ secrets.POSTGRES_PORT_TEST }}
-          DATABASE_URL: postgresql://${{ secrets.POSTGRES_USER_TEST }}:${{ secrets.POSTGRES_PASSWORD_TEST }}@${{ secrets.POSTGRES_HOST_TEST }}:${{ secrets.POSTGRES_PORT_TEST }}/${{ secrets.POSTGRES_DB_TEST }}
-          DATABASE_URL_TEST: postgresql://${{ secrets.POSTGRES_USER_TEST }}:${{ secrets.POSTGRES_PASSWORD_TEST }}@${{ secrets.POSTGRES_HOST_TEST }}:${{ secrets.POSTGRES_PORT_TEST }}/${{ secrets.POSTGRES_DB_TEST }}
+      # on déf les variables pour les utiliser dans le test
+      POSTGRES_USER_TEST: ${{ secrets.POSTGRES_USER_TEST }}
+      POSTGRES_PASSWORD_TEST: ${{ secrets.POSTGRES_PASSWORD_TEST }}
+      POSTGRES_DB_TEST: ${{ secrets.POSTGRES_DB_TEST }}
+      POSTGRES_HOST_TEST: ${{ secrets.POSTGRES_HOST_TEST }}
+      POSTGRES_PORT_TEST: ${{ secrets.POSTGRES_PORT_TEST }}
+      # du a database.py
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER_TEST }}
+      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT_TEST }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_TEST }}
+      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST_TEST }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB_TEST }}
     services:
       # service lance un conteneur docker séparé d'où l'env a réiterer
+      # postgre attend nécéssairement les variables nommés ci-dessous (d'ou pas de _TEST)
       postgres:
         image: postgres:15
         env:
@@ -97,7 +102,7 @@ jobs:
       # Lance les tests avec coverage
       - name: Run tests with coverage
         run: |
-          pytest tests
+          pytest
       # Créer un rapport de couverture HTML
       - name: Archive coverage report
         uses: actions/upload-artifact@v4

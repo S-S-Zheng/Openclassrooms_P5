@@ -23,29 +23,32 @@ from pydantic import BaseModel, Field, field_validator
 class PredictionInput(BaseModel):
     features: Dict[str, Union[str, float, int]] = Field(
         ...,
-        examples={
-            "age": 0,
-            "genre": "0",
-            "revenu_mensuel": 0.0,
-            "statut_marital": "0",
-            "poste": "0",
-            "annees_dans_le_poste_actuel": 0,
-            "heure_supplementaires": "0",
-            "augementation_salaire_precedente": 0.0,
-            "nombre_participation_pee": 0,
-            "nb_formations_suivies": 0,
-            "distance_domicile_travail": 0.0,
-            "niveau_education": 0,
-            "domaine_etude": "0",
-            "frequence_deplacement": "0",
-            "evolution_note": 0.0,
-            "stagnation_promo": 0.0,
-            "freq_chgt_poste": 0.0,
-            "revenu_mensuel_ajuste_par_nv_hierarchique": 0.0,
-            "revenu_mensuel_par_annee_xp": 0.0,
-            "freq_chgt_responsable": 0.0,
-            "satisfaction_globale_employee": 0,
-        },
+        # Pydantic v2 oblige a avoir une liste
+        examples=[
+            {
+                "age": 41,
+                "genre": "f",
+                "revenu_mensuel": 5993,
+                "statut_marital": "célibataire",
+                "poste": "cadre commercial",
+                "annees_dans_le_poste_actuel": 4,
+                "heure_supplementaires": "oui",
+                "augementation_salaire_precedente": 11,
+                "nombre_participation_pee": 0,
+                "nb_formations_suivies": 0,
+                "distance_domicile_travail": 1,
+                "niveau_education": 2,
+                "domaine_etude": "infra & cloud",
+                "frequence_deplacement": "occasionnel",
+                "evolution_note": 0,
+                "stagnation_promo": 0.0,
+                "freq_chgt_poste": 0.888889,
+                "revenu_mensuel_ajuste_par_nv_hierarchique": 2996.5,
+                "revenu_mensuel_par_annee_xp": 665.888889,
+                "freq_chgt_responsable": 0.833333,
+                "satisfaction_globale_employee": 8,
+            }
+        ],
     )
 
     @field_validator("features")

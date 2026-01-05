@@ -4,16 +4,15 @@ Tests sur les features qui interagissent avec la DB
 
 # imports
 
-import pandas as pd
 import pytest
 from sqlalchemy import create_engine, inspect, select
 from sqlalchemy.orm import Session, sessionmaker  # noqa: F401
 
-from app import database
-from app.api.models_db import PredictionRecord
-from app.api.services.save_prediction_to_db import save_prediction
-from app.create_db import init_db
-from app.import_dataset_to_db import import_csv
+from app.db import database
+from app.db.actions.save_prediction_to_db import save_prediction
+from app.db.create_db import init_db
+from app.db.import_dataset_to_db import import_csv
+from app.db.models_db import PredictionRecord
 from app.utils.hash_id import generate_feature_hash
 
 # ========================== DATABASE =======================
@@ -26,7 +25,7 @@ def test_get_db(monkeypatch, TestingSession):
     monkeypatch.setattr(database, "SessionLocal", TestingSession)
 
     # On teste le générateur (@contextmanager ==> on l'utilise avec 'with')
-    with database.get_db() as session:
+    with database.get_db_contextmanager() as session:
         assert isinstance(session, Session)
         assert session.is_active
 
@@ -158,23 +157,12 @@ def test_init_db_failed_init():
 
 
 # Happy path
-def test_import_csv_success(monkeypatch, tmp_path, TestingSession, TestingEngine):
+def test_import_csv_success(monkeypatch, TestingSession, TestingEngine, fake_csv):
     """
     Vérifie que le CSV est bien lu et inséré en base avec les bons IDs
     """
-    # faux chemin avec fichier csv
-    fake_file = tmp_path / "hist_datas"
-    fake_file.mkdir()
-    fake_file_path = fake_file / "test_data.csv"
-    fake_data = {
-        "features": {
-            "age": [20, 50],
-            "genre": ["f", "m"],
-            "revenue_mensuel": [1500, 8000],
-            "a_quitte_l_entreprise": [1, 0],
-        }
-    }
-    pd.DataFrame(fake_data["features"]).to_csv(fake_file_path, index=False)
+    # On import chemin et données
+    fake_file_path, fake_data = fake_csv
 
     # On court-circuite get_db
     monkeypatch.setattr(database, "SessionLocal", TestingSession)
@@ -198,3 +186,30 @@ def test_import_csv_success(monkeypatch, tmp_path, TestingSession, TestingEngine
         assert classification is not None
         assert classification.prediction == 1
         assert classification.confidence == 1.0
+
+
+# ==============================================================
+
+
+# Unicité
+def test_import_csv_unique(fake_csv, TestingSession, monkeypatch, TestingEngine):
+    """
+    Vérifie que la data hist n'est pas ré enregistrer si déjà présente
+    """
+    # On import chemin et données
+    fake_file_path, fake_data = fake_csv
+
+    # On court-circuite get_db
+    monkeypatch.setattr(database, "SessionLocal", TestingSession)
+
+    # On importe deux fois, le premier devrait etre bon seulement
+    import_csv(str(fake_file_path))
+    import_csv(str(fake_file_path))
+
+    # On ouvre une autre session avec TestingEngine pour vérifier le nombre d'observation
+    # on ouvre une nouvelle session pour éviter un eventuel "session is closed"
+    Session = sessionmaker(bind=TestingEngine)
+    with Session() as session:
+        records = session.scalars(select(PredictionRecord)).all()
+
+        assert len(records) == len(fake_data["features"]["a_quitte_l_entreprise"])

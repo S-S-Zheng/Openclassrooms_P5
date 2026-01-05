@@ -9,9 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.api.schemas import PredictionInput, PredictionOutput
-from app.api.services.get_prediction_from_db import get_prediction
-from app.api.services.save_prediction_to_db import save_prediction
-from app.database import get_db
+from app.db.actions.get_prediction_from_db import get_prediction
+from app.db.actions.save_prediction_to_db import save_prediction
+from app.db.database import get_db
 
 router = APIRouter(prefix="/predict", tags=["Prediction"])
 

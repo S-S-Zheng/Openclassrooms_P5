@@ -6,7 +6,7 @@ from sqlalchemy import Column, DateTime, Float, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 
-from app.database import Base
+from app.db.base import Base
 
 # ============== Tables ========================
 

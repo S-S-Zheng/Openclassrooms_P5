@@ -6,7 +6,7 @@ Génère un id unique à partir du hashing sur les features et sauvegarde la req
 
 from sqlalchemy.orm import Session
 
-from app.api.models_db import PredictionRecord
+from app.db.models_db import PredictionRecord
 from app.utils.hash_id import generate_feature_hash
 
 # ==========================

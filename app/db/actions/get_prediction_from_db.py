@@ -7,7 +7,7 @@ Interroge la base de donnée suivant l'ID afin s'assurer que la requete n'a jama
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.models_db import PredictionRecord
+from app.db.models_db import PredictionRecord
 from app.utils.hash_id import generate_feature_hash
 
 

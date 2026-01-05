@@ -7,11 +7,10 @@ Peut se lancer en tant que tel.
 # imports
 
 import pandas as pd
-from sqlalchemy.orm import Session  # noqa: F401
 
-from app.api.models_db import PredictionRecord
-from app.create_db import init_db
-from app.database import Base, SessionLocal, base_engine, get_db  # noqa: F401
+from app.db.create_db import init_db
+from app.db.database import get_db_contextmanager
+from app.db.models_db import PredictionRecord
 from app.utils.hash_id import generate_feature_hash
 
 # =============================
@@ -22,7 +21,7 @@ def import_csv(file_path: str):
     # Remplacer les NaN par None (car NaN n'est pas un JSON valide)
     df = df.where(pd.notnull(df), None)
 
-    with get_db() as db:
+    with get_db_contextmanager() as db:
         print("Importation de données historique ...")
         new_records = []
         for _, row in df.iterrows():
