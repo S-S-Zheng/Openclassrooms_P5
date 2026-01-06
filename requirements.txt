@@ -2,12 +2,14 @@
 fastapi>=0.115.0
 uvicorn>=0.23.0
 pydantic>=2.6.0
+pydantic-settings>=2.6.1
 python-multipart>=0.0.9
 
 # --- Manipulation de données ---
 pandas>=2.1.0
 numpy>=1.24.0,<2.0.0
 PyYAML>=6.0
+python-dotenv>=1.1.0
 
 # --- Inférence ---
 catboost>=1.2.7
