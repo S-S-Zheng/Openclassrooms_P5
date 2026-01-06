@@ -18,10 +18,13 @@ from app.api.schemas import (
 
 
 # Happy path
-def test_prediction_input_valid(fake_dict):
-    obj = PredictionInput(features=fake_dict)
+def test_prediction_input_valid(func_sample):
+    obj = PredictionInput(features=func_sample["features"])
 
-    assert obj.features == fake_dict
+    assert obj.features == func_sample["features"]
+    assert isinstance(obj.features["age"], int)
+    assert isinstance(obj.features["genre"], str)
+    assert isinstance(obj.features["augementation_salaire_precedente"], int)
 
 
 # features manquante
@@ -33,7 +36,44 @@ def test_prediction_input_missing_features():
 # type de feature incorrect
 def test_prediction_input_wrong_type():
     with pytest.raises(ValidationError):
-        PredictionInput(features=[1.0, "deux", 3.3])
+        PredictionInput(features={"age": [30], "genre": "m", "revenu_mensuel": 2000})
+
+
+# Champs obligatoires manquant
+@pytest.mark.parametrize("mandatory_features", ["age", "genre", "revenu_mensuel"])
+def test_prediction_mandatory_input_missing_business_rules(
+    mandatory_features, func_sample
+):
+    # On test que la suppr de la feature mandatory_features donne bien une erreur
+    payload = func_sample["features"]
+    payload.pop(mandatory_features)
+    with pytest.raises(ValidationError) as excinfo:
+        PredictionInput(features=payload)
+
+    assert f"Champ obligatoire manquant : {mandatory_features}" in str(excinfo.value)
+
+
+# Outliers
+@pytest.mark.parametrize(
+    "invalid_features, expected_error_msg",
+    [
+        ({"age": 150, "genre": "m", "revenu_mensuel": 2000}, "18 a 65 ans"),
+        (
+            {"age": 30, "heure_supplementaires": "trop", "revenu_mensuel": 2000},
+            "heure supp: oui ou non",
+        ),
+        ({"age": 30, "genre": "m", "revenu_mensuel": 123}, "revenu mensuel >=1200"),
+    ],
+)
+def test_prediction_input_invalid_business_rules(
+    invalid_features, expected_error_msg, func_sample
+):
+    with pytest.raises(ValidationError) as excinfo:
+        payload = func_sample["features"].copy()
+        payload.update(invalid_features)
+        PredictionInput(features=payload)
+
+    assert expected_error_msg in str(excinfo.value)
 
 
 # ===================== PredictionOutput =======================
@@ -44,7 +84,7 @@ def test_prediction_output_valid():
     out = PredictionOutput(
         prediction=1.0,
         confidence=0.85,
-        class_name="Démissionaire",
+        class_name="Démissionnaire",
     )
 
     assert out is not None
@@ -59,21 +99,28 @@ def test_prediction_output_invalid_confidence(confidence):
         PredictionOutput(
             prediction=1.0,
             confidence=confidence,
-            class_name="Démissionaire",
+            class_name="Démissionnaire",
         )
 
 
 # ===================== feature importance =====================
 # On teste que top_features est bien une liste de tuples (str, float)
-# Pas de test d'erreur (with pytest.raises...) car couverture suffisamment stricte
-def test_feature_importance_output():
-    data = {"top_features": [("age", 0.42), ("salary", -0.31)]}
+# capable de convertir des données qui ressemblent au type ciblé
+def test_feature_importance_coercion():
+    # Ici, on envoie "0.42" au lieu de 0.42
+    data = {"top_features": [("age", "0.42")]}
     obj = FeatureImportanceOutput(**data)
 
-    assert isinstance(obj.top_features, list)
-    assert isinstance(obj.top_features[0][0], str)
+    # Pydantic doit avoir converti la string en float
+    assert obj.top_features[0][1] == 0.42
     assert isinstance(obj.top_features[0][1], float)
-    assert len(obj.top_features) == 2
+
+
+def test_feature_importance_invalid_structure():
+    # Test d'une structure corrompue (tuple trop long)
+    bad_data = {"top_features": [("age", 0.42, "extra_value")]}
+    with pytest.raises(ValidationError):
+        FeatureImportanceOutput(**bad_data)
 
 
 # ===================== Métadatas du modèle =====================
@@ -83,15 +130,19 @@ def test_model_info_output():
     obj = ModelInfoOutput(
         model_type="CatBoostClassifier",
         n_features=5,
-        features_names=["f1", "f2", "f3", "f4", "f5"],
-        classes=["Employé", "Démissionaire"],
+        feature_names=["f1", "f2", "f3", "f4", "f5"],
+        cat_features=["f1", "f2"],
+        num_features=["f3", "f4", "f5"],
+        classes=["Employé", "Démissionnaire"],
         threshold=0.6,
     )
 
     assert obj.model_type == "CatBoostClassifier"
     assert obj.n_features == 5
-    assert obj.features_names == ["f1", "f2", "f3", "f4", "f5"]
-    assert obj.classes == ["Employé", "Démissionaire"]
+    assert obj.feature_names == ["f1", "f2", "f3", "f4", "f5"]
+    assert obj.cat_features == ["f1", "f2"]
+    assert obj.num_features == ["f3", "f4", "f5"]
+    assert obj.classes == ["Employé", "Démissionnaire"]
     assert obj.threshold == 0.6
 
 

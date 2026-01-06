@@ -4,43 +4,61 @@ Test des routes de l'API
 
 # Imports
 
+from sqlalchemy import delete, func, select
+
+from app.db.models_db import PredictionRecord
+
 # ========================= PREDICT ==========================
 
 
 # Happy path
-def test_predict_success(client, mock_ml_model, fake_dict):
-    mock_ml_model(should_fail=False)
+def test_predict_success(client, mock_ml_model, func_sample, db_session_for_tests):
+    # Nettoyage de la base pour ne pas être influencé par la fixture init
+    # permet aussi de ne pas casser le test reset_tables
+    db_session_for_tests.execute(delete(PredictionRecord))
+    db_session_for_tests.commit()
 
-    payload = {"features": fake_dict}
-    response = client.post("/predict", json=payload)
+    mock_predict = mock_ml_model(should_fail=False)
+    mock_pred, mock_conf, mock_class = mock_predict.predict.return_value
+
+    response = client.post("/predict/", json=func_sample)
 
     assert response.status_code == 200
+
     data = response.json()
-    assert data["prediction"] == 1.0
-    assert data["confidence"] == 0.85
-    assert data["class_name"] == "Démissionaire"
+    assert data["prediction"] == mock_pred
+    assert data["confidence"] == mock_conf
+    assert data["class_name"] == mock_class
+
+    record = db_session_for_tests.scalar(select(PredictionRecord))
+    assert record is not None
+    assert record.prediction == mock_pred
+    assert record.confidence == mock_conf
+    assert record.class_name == mock_class
 
 
-# Echec ValueError (requete invalide == 400 )
-def test_predict_value_error(client, mock_ml_model, fake_dict):
-    mock_ml_model(should_fail=True, error_type="value")
-
-    payload = {"features": fake_dict}
-    response = client.post("/predict", json=payload)
-
-    assert response.status_code == 400
-    assert response.json()["detail"] == "Modèle non chargé"
+# =========================================================
 
 
-# Echec erreur critique interne (erreur serveur == 500)
-def test_predict_unexpected_error(client, mock_ml_model, fake_dict):
-    mock_ml_model(should_fail=True, error_type="exception")
+# Erreurs
+def test_predict_errors(
+    client, mock_ml_model, func_sample, error_responses, db_session_for_tests
+):
+    # Nettoyage de la base pour ne pas être influencé par la fixture init
+    # permet aussi de ne pas casser le test reset_tables
+    db_session_for_tests.execute(delete(PredictionRecord))
+    db_session_for_tests.commit()
 
-    payload = {"features": fake_dict}
-    response = client.post("/predict", json=payload)
+    mock_ml_model(**error_responses["mock_args"])
 
-    assert response.status_code == 500
-    assert response.json()["detail"] == "Erreur interne critique"
+    response = client.post("/predict/", json=func_sample)
+
+    assert response.status_code == error_responses["expected_status"]
+    assert response.json()["detail"] == error_responses["error_msg"]
+
+    # On s'assure que rien n'est sauvegardé puisque ça plante
+    record = db_session_for_tests.scalar(select(func.count(PredictionRecord.id)))
+    assert record == 0
 
 
 # ========================= FEATURE IMPORTANCE ==========================
@@ -48,7 +66,7 @@ def test_predict_unexpected_error(client, mock_ml_model, fake_dict):
 
 # Happy path
 def test_feature_importance_success(client, mock_ml_model):
-    mock_ml_model(should_fail=False, endpoint="feature_importance")
+    mock_ml_model(should_fail=False)
 
     response = client.get("/feature-importance?top_n=5")
 
@@ -61,28 +79,17 @@ def test_feature_importance_success(client, mock_ml_model):
     assert isinstance(data["top_features"][0][1], float)
 
 
-# Tests redondant des erreurs mais obligatoire pour respecter % coverage
-# ==> on test le contrat de chaque endpoint != erreur métier
-# Echec ValueError (requete invalide == 400 )
-def test_feature_importance_value_error(client, mock_ml_model):
-    mock_ml_model(should_fail=True, error_type="value", endpoint="feature_importance")
+# =========================================================
+
+
+# Erreurs
+def test_feature_importance_errors(client, mock_ml_model, error_responses):
+    mock_ml_model(**error_responses["mock_args"])
 
     response = client.get("/feature-importance?top_n=5")
 
-    assert response.status_code == 400
-    assert response.json()["detail"] == "Modèle non chargé"
-
-
-# Echec erreur critique interne (erreur serveur == 500)
-def test_feature_importance_unexpected_error(client, mock_ml_model):
-    mock_ml_model(
-        should_fail=True, error_type="exception", endpoint="feature_importance"
-    )
-
-    response = client.get("/feature-importance?top_n=5")
-
-    assert response.status_code == 500
-    assert response.json()["detail"] == "Erreur interne critique"
+    assert response.status_code == error_responses["expected_status"]
+    assert response.json()["detail"] == error_responses["error_msg"]
 
 
 # ========================= METADATAS ===========================
@@ -90,7 +97,7 @@ def test_feature_importance_unexpected_error(client, mock_ml_model):
 
 # Happy path
 def test_model_info_success(client, mock_ml_model):
-    mock_ml_model(should_fail=False, endpoint="model_info")
+    model = mock_ml_model(should_fail=False)
 
     response = client.get("/model-info")
 
@@ -98,27 +105,26 @@ def test_model_info_success(client, mock_ml_model):
     data = response.json()
 
     assert data["model_type"] == "CatBoostClassifier"
-    assert data["n_features"] == 5
-    assert data["features_names"] == ["f1", "f2", "f3", "f4", "f5"]
-    assert data["classes"] == ["Employé", "Démissionaire"]
+    assert data["n_features"] == len(model.feature_names_)
+    assert data["feature_names"] == model.feature_names_
+    assert data["cat_features"] == ["genre", "statut_marital"]
+    assert data["num_features"] == [
+        "age",
+        "revenu_mensuel",
+        "augementation_salaire_precedente",
+    ]
+    assert data["classes"] == ["Employé", "Démissionnaire"]
     assert data["threshold"] == 0.6
 
 
-# Echec ValueError (requete invalide == 400 )
-def test_model_info_value_error(client, mock_ml_model):
-    mock_ml_model(should_fail=True, error_type="value", endpoint="model_info")
+# =========================================================
+
+
+# Erreurs
+def test_model_info_errors(client, mock_ml_model, error_responses):
+    mock_ml_model(**error_responses["mock_args"])
 
     response = client.get("/model-info")
 
-    assert response.status_code == 400
-    assert response.json()["detail"] == "Modèle non chargé"
-
-
-# Echec erreur critique interne (erreur serveur == 500)
-def test_model_info_unexpected_error(client, mock_ml_model):
-    mock_ml_model(should_fail=True, error_type="exception", endpoint="model_info")
-
-    response = client.get("/model-info")
-
-    assert response.status_code == 500
-    assert response.json()["detail"] == "Erreur interne critique"
+    assert response.status_code == error_responses["expected_status"]
+    assert response.json()["detail"] == error_responses["error_msg"]

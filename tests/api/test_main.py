@@ -23,3 +23,10 @@ def test_root_redirects_to_docs(client):
 
     assert response.status_code == 307
     assert response.headers["location"] == "/docs"
+
+
+# =================== Lifespan =======================
+def test_lifespan_startup(client):
+    # Vérifie que l'instance a bien été créée et attachée
+    assert hasattr(client.app.state, "model")
+    assert client.app.state.model is not None

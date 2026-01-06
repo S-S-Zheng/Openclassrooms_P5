@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from app.api.routes.feature_importance import router as feature_importance_router
 from app.api.routes.model_info import router as model_info_router
 from app.api.routes.predict import router as predict_router
-from app.ml.model import ml_model
+from app.ml.model import MLModel
 
 
 # assynccontextmanager est un décorateur qui permet de définir une fonction
@@ -20,18 +20,23 @@ from app.ml.model import ml_model
 # du serveur ce qui permet de maintenit l'état tant que le serveur est en ON
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Phase de démarrage: on charge une seule fois les données pour optimiser
-    # la RAM
-    ml_model.load()
+    # ============== Phase de démarrage ================
+    # on charge une seule fois les données pour optimiser la RAM
+    model_instance = MLModel()
+    model_instance.load()
+    # Stockage de l'app pour qu'il soit accessible partout
+    app.state.model = model_instance
+
     yield
-    # Phase d'arrêt: Nettoyage possible, sauvegarde de données...
+    # ================== Phase d'arrêt =================
+    # On coupe les connexions avec la DB
 
 
 # ==================== API =============================
 app = FastAPI(
     title="ML Prediction API",
     description="API REST pour exposer le CBC des démissions",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
