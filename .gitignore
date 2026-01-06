@@ -45,12 +45,12 @@ poetry.lock
 poetry.toml
 
 # Fichiers du ML à ignorer
-model/**/*.csv
-model/**/*.pkl
-model/**/*.png
-model/**/Heat*
-model/**/__pycache__/
-model/**/catboost_info/
+app/**/*.csv
+app/**/*.pkl
+app/**/*.png
+app/**/Heat*
+app/**/__pycache__/
+app/**/catboost_info/
 
 # Pytest
 .pytest*

@@ -41,11 +41,27 @@ def fake_dict():
 def func_sample():
     return {
         "features": {
+            "age": 32,
             "genre": "m",
-            "statut_marital": "célibataire",
-            "age": 30,
-            "revenu_mensuel": 2500,
-            "augementation_salaire_precedente": 10.0,
+            "revenu_mensuel": 60000,
+            "statut_marital": "marié(e)",
+            "poste": "cadre commercial",
+            "annees_dans_le_poste_actuel": 4,
+            "heure_supplementaires": "oui",
+            "augementation_salaire_precedente": 3,
+            "nombre_participation_pee": 6,
+            "nb_formations_suivies": 3,
+            "distance_domicile_travail": 10,
+            "niveau_education": 3,
+            "domaine_etude": "infra & cloud",
+            "frequence_deplacement": "frequent",
+            "evolution_note": 1,
+            "stagnation_promo": 0.0,
+            "freq_chgt_poste": 0.1,
+            "revenu_mensuel_ajuste_par_nv_hierarchique": 60000.0,
+            "revenu_mensuel_par_annee_xp": 6658.88889,
+            "freq_chgt_responsable": 0.1,
+            "satisfaction_globale_employee": 10,
         }
     }
 
@@ -98,7 +114,7 @@ def fake_csv(tmp_path):
         "features": {
             "age": [20, 50],
             "genre": ["f", "m"],
-            "revenue_mensuel": [1500, 8000],
+            "revenu_mensuel": [1500, 8000],
             "a_quitte_l_entreprise": [1, 0],
         }
     }
@@ -235,7 +251,10 @@ db_port_test = os.getenv("POSTGRES_PORT_TEST")
 db_name_test = os.getenv("POSTGRES_DB_TEST")
 
 #
-DATABASE_URL_TEST = f"postgresql://{db_user_test}:{db_pass_test}@{db_host_test}:{db_port_test}/{db_name_test}"  # noqa: E501
+DATABASE_URL_TEST = (
+    f"postgresql+psycopg2://{db_user_test}:{db_pass_test}@{db_host_test}:"
+    f"{db_port_test}/{db_name_test}"
+)
 # DATABASE_URL_TEST = os.getenv("DATABASE_URL_TEST")
 
 # ENGINE: point de départ de SQLAlchemy

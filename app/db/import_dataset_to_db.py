@@ -8,7 +8,6 @@ Peut se lancer en tant que tel.
 
 import pandas as pd
 
-from app.db.create_db import init_db
 from app.db.database import get_db_contextmanager
 from app.db.models_db import PredictionRecord
 from app.utils.hash_id import generate_feature_hash
@@ -34,21 +33,19 @@ def import_csv(file_path: str):
             if db.get(PredictionRecord, unique_id):
                 continue
 
-            # Mapping des classes
-            if target == 1:
-                name = "Démissionnaire"
-                pred_val = 1
-            else:
-                name = "Employé"
-                pred_val = 0
+            # On constitue un dictionnaire complet qui répond aux exigences de l'UML
+            assemble = {
+                "id": unique_id,
+                "inputs": features,
+                "prediction": int(target) if target is not None else None,
+                "confidence": 1.0,  # données historique donc forcement 1.0
+                "class_name": "Démissionnaire" if target == 1 else "Employé",
+                "a_quitte_l_entreprise": int(target) if target is not None else None,
+            }
+            assemble.update(features)
 
-            record = PredictionRecord(
-                id=unique_id,
-                inputs=features,
-                prediction=pred_val,
-                confidence=1.0,  # données historique donc forcement 1.0
-                class_name=name,
-            )
+            # On unpack suivant le model UML
+            record = PredictionRecord(**assemble)
             new_records.append(record)
 
         if new_records:
@@ -59,7 +56,16 @@ def import_csv(file_path: str):
             print("Pas d'importation nécéssaire")
 
 
-# Empeche le script de se lancer par erreur si appelé par un autre script
 if __name__ == "__main__":
-    init_db()
-    import_csv("hist_datas/Xy.csv")
+    from pathlib import Path
+
+    # On remonte a app/
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    CSV_PATH = (
+        BASE_DIR / "ml" / "model" / "datas" / "results" / "hist_datas" / "P4" / "Xy.csv"
+    )
+
+    if not CSV_PATH.exists():
+        print("pas d'import depuis le dossier hist_datas")
+    else:
+        import_csv(CSV_PATH)

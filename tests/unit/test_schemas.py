@@ -24,7 +24,7 @@ def test_prediction_input_valid(func_sample):
     assert obj.features == func_sample["features"]
     assert isinstance(obj.features["age"], int)
     assert isinstance(obj.features["genre"], str)
-    assert isinstance(obj.features["augementation_salaire_precedente"], float)
+    assert isinstance(obj.features["augementation_salaire_precedente"], int)
 
 
 # features manquante
@@ -58,13 +58,20 @@ def test_prediction_mandatory_input_missing_business_rules(
     "invalid_features, expected_error_msg",
     [
         ({"age": 150, "genre": "m", "revenu_mensuel": 2000}, "18 a 65 ans"),
-        ({"age": 30, "genre": "autre", "revenu_mensuel": 2000}, "m ou f"),
-        ({"age": 30, "genre": "m", "revenu_mensuel": 123}, "doit >1200"),
+        (
+            {"age": 30, "heure_supplementaires": "trop", "revenu_mensuel": 2000},
+            "heure supp: oui ou non",
+        ),
+        ({"age": 30, "genre": "m", "revenu_mensuel": 123}, "revenu mensuel >=1200"),
     ],
 )
-def test_prediction_input_invalid_business_rules(invalid_features, expected_error_msg):
+def test_prediction_input_invalid_business_rules(
+    invalid_features, expected_error_msg, func_sample
+):
     with pytest.raises(ValidationError) as excinfo:
-        PredictionInput(features=invalid_features)
+        payload = func_sample["features"].copy()
+        payload.update(invalid_features)
+        PredictionInput(features=payload)
 
     assert expected_error_msg in str(excinfo.value)
 

@@ -16,7 +16,7 @@ def save_prediction(db: Session, features: dict, pred_data: tuple):
     """Gère la génération d'ID et l'enregistrement."""
     prediction, confidence, class_name = pred_data
 
-    # Generation ID de 12 caractères hexadecimaux
+    # Generation ID de caractères hexadecimaux
     request_id = generate_feature_hash(features)
 
     new_record = PredictionRecord(
@@ -25,6 +25,7 @@ def save_prediction(db: Session, features: dict, pred_data: tuple):
         prediction=int(prediction),
         confidence=float(confidence),
         class_name=class_name,
+        **features  # On unpack les features
     )
 
     try:

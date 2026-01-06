@@ -13,8 +13,8 @@ import json
 
 
 def generate_feature_hash(features: dict) -> str:
-    """Génère un ID unique de 12 caractères basé sur le contenu des features."""
+    """Génère un ID hashé basé sur le contenu des features."""
     # 1. Trier les clés pour que {"a":1, "b":2} donne le même résultat que {"b":2, "a":1}
     encoded_features = json.dumps(features, sort_keys=True).encode("utf-8")
-    # 2. Hasher et prendre les 12 premiers caractères (hexadécimal)
-    return hashlib.sha256(encoded_features).hexdigest()[:12]
+    # 2. Hasher
+    return hashlib.sha256(encoded_features).hexdigest()

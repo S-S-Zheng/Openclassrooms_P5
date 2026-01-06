@@ -14,7 +14,7 @@ from catboost import CatBoostClassifier
 # Récupère/crée logger avec nom du module courant (ex: __name__="model")
 logger = logging.getLogger(__name__)
 
-# Chemin à charger:
+# Chemin à charger: on part du dossier ml/
 # __file__ : chemin du fichier en cours d'exe (model.py)
 # resolve(): convertie en chemin absolu + parent: donne le dossier du parent
 BASE_DIR = Path(__file__).resolve().parent / "model/datas/results"

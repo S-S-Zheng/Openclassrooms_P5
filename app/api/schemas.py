@@ -55,31 +55,72 @@ class PredictionInput(BaseModel):
     @classmethod
     def validate_business_logic(cls, features_dict: dict):
         """
-        logique métier, on va se limiter a 3 features (age, genre et salaire)
-        ==> il faudra in fine définir et obliger à fournir les 21 features!
+        logique métier avec les 21 features utilisées pour entrainé CatBoostClassifier
         """
-        champs_obligatoires = ["age", "genre", "revenu_mensuel"]
+        mandatory_fields = [
+            "age",
+            "genre",
+            "revenu_mensuel",
+            "statut_marital",
+            "poste",
+            "annees_dans_le_poste_actuel",
+            "heure_supplementaires",
+            "augementation_salaire_precedente",
+            "nombre_participation_pee",
+            "nb_formations_suivies",
+            "distance_domicile_travail",
+            "niveau_education",
+            "domaine_etude",
+            "frequence_deplacement",
+            "evolution_note",
+            "stagnation_promo",
+            "freq_chgt_poste",
+            "revenu_mensuel_ajuste_par_nv_hierarchique",
+            "revenu_mensuel_par_annee_xp",
+            "freq_chgt_responsable",
+            "satisfaction_globale_employee",
+        ]
 
-        for champ in champs_obligatoires:
-            if champ not in features_dict:
-                raise ValueError(f"Champ obligatoire manquant : {champ}")
+        for field in mandatory_fields:
+            if field not in features_dict:
+                raise ValueError(f"Champ obligatoire manquant : {field}")
 
-        # age
-        valeur_age = features_dict.get("age")
-        if valeur_age is not None:
-            if not (18 <= valeur_age <= 65):
-                raise ValueError("18 a 65 ans")
+        # Mapping
+        # (min, max, msg) features numériques
+        num_rules = {
+            "age": (18, 65, "18 a 65 ans"),
+            "revenu_mensuel": (1200, 100000, "revenu mensuel >=1200"),
+            "annees_dans_le_poste_actuel": (
+                0,
+                65,
+                "annees dans le poste >= 0 (jusqu'à 65 ans)",
+            ),
+            "augementation_salaire_precedente": (0, 50, "augmentation entre 0 et 50%"),
+            "evolution_note": (-4, 4, "evolution de la note entre -4 et 4"),
+            "satisfaction_globale_employee": (0, 16, "satisfaction entre 0 et 16"),
+            "freq_chgt_responsable": (0, 1, "freq chgt responsable entre 0 et 1"),
+        }
+        # (choix,msg) features catégorielles
+        cat_rules = {
+            "heure_supplementaires": (["oui", "non"], "heure supp: oui ou non"),
+            "frequence_deplacement": (
+                ["aucun", "occasionnel", "frequent"],
+                "freq deplacement: aucun, occasionnel ou frequent",
+            ),
+        }
+        # Validation features numériques
+        for field, (min_v, max_v, msg) in num_rules.items():
+            val = features_dict.get(field)
+            if val is not None:
+                if not (min_v <= val <= max_v):
+                    raise ValueError(msg)
 
-        # genre
-        valeur_genre = features_dict.get("genre")
-        if valeur_genre and str(valeur_genre).lower() not in ["m", "f"]:
-            raise ValueError("m ou f")
-
-        # salaire
-        valeur_salaire = features_dict.get("revenu_mensuel")
-        if valeur_salaire is not None:
-            if valeur_salaire < 1200:
-                raise ValueError("doit >1200")
+        # Validation features catégorielles
+        for field, (allowed, msg) in cat_rules.items():
+            val = features_dict.get(field)
+            if val is not None:
+                if str(val).lower() not in allowed:
+                    raise ValueError(msg)
 
         return features_dict
 
