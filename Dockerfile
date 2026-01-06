@@ -26,6 +26,6 @@ COPY --chown=user . .
 EXPOSE 7860
 
 # Commande de lancement (adaptée à Hugging Face Spaces)
-CMD python -m app.db.init_db && \
+CMD python -m app.db.create_db && \
     python -m app.db.import_dataset_to_db && \
     uvicorn app.main:app --host 0.0.0.0 --port 7860
