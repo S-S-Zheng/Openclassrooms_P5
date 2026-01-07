@@ -1,8 +1,5 @@
 """
-Mettre les tests fonctionnelles (limiter les ranges des variables par exemple)\n
-*HAPPY PATH api 200 ok / age, salaire etc employé ok..\n
-*OUT of RANGE valeurs impossible ==> erreur 422 a recevoir\n
-*MISSING FEATURE verifier 422 si valeurs manquantes\n
+Test d'intégration End To End / logique métier
 """
 
 # imports
@@ -11,7 +8,6 @@ import pytest
 # ======================== test des profiles =========================
 
 
-@pytest.mark.functionnal
 @pytest.mark.parametrize(
     "functionnal_profile",
     ["happy_path", "missing_features", "outliers", "over_featured"],

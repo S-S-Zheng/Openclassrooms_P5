@@ -1,5 +1,4 @@
-# Ce script est un utilitaire.
-# Le placer dans app/ permet d'importer facilement models_db et database pour créer les tables.
+# Placer dans app/ permet d'importer facilement models_db et database pour créer les tables.
 
 # imports
 import sys

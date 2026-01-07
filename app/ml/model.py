@@ -120,7 +120,7 @@ class MLModel:
             "threshold": self.threshold,
         }
 
-    def predict(self, features: Dict[str, float]) -> Tuple[float, float, str]:
+    def predict(self, features: Dict[str, float]) -> Tuple[int, float, str]:
         """
         Réalise une prédiction
 
@@ -159,7 +159,7 @@ class MLModel:
             prediction = int(confidence >= self.threshold)
 
         class_name = str(self.classes[prediction])
-        prediction_value = float(prediction)
+        prediction_value = int(prediction)
 
         return prediction_value, confidence, class_name
 

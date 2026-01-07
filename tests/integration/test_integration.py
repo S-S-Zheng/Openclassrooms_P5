@@ -10,7 +10,7 @@ import pytest
 
 @pytest.mark.integration
 def test_functional_pipeline_real_model(ml_model):
-    """Test de bout en bout avec les vrais fichiers de poids."""
+    """Test d'intégration des artefacts."""
     try:
         ml_model.load()  # Charge fichiers locaux
     except Exception as e:
@@ -29,7 +29,7 @@ def test_functional_pipeline_real_model(ml_model):
     prediction, confidence, class_name = ml_model.predict(sample_input)
 
     # Assertions sur les types de sortie (très important pour ton erreur ndarray/float)
-    assert isinstance(prediction, float)
+    assert isinstance(prediction, int)
     assert isinstance(confidence, float)
     assert isinstance(class_name, str)
     assert 0 <= confidence <= 1.0

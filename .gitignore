@@ -55,6 +55,10 @@ app/**/catboost_info/
 # Pytest
 .pytest*
 
+# Sphinx
+docs/build/
+docs/_build/
+
 # Autres
 db_connection_test.py
 htmlcov
