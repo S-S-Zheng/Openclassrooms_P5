@@ -2,7 +2,7 @@
 # SQLAlchemy définit la forme des données qui dorment en base.
 
 # imports
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -67,7 +67,7 @@ class PredictionRecord(Base):
     satisfaction_globale_employee = Column(Integer)
 
     # Target
-    a_quitte_l_entreprise = Column(Boolean)
+    a_quitte_l_entreprise = Column(Integer)
 
     # Inputs condensé
     inputs = Column(JSONB)
