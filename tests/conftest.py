@@ -18,10 +18,12 @@ import yaml
 from catboost import CatBoostClassifier
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
 from app.db.base import Base
 from app.db.database import get_db
+from app.db.models_db import PredictionRecord, RequestLog  # noqa: F401
 from app.main import app
 from app.ml.model import MLModel
 
@@ -312,3 +314,18 @@ def override_db(db_session_for_tests):
     app.dependency_overrides[get_db] = lambda: db_session_for_tests
     yield
     app.dependency_overrides.clear()
+
+
+# Session db qui saute pendant une transaction
+@pytest.fixture
+def db_session_broken_for_tests(db_session_for_tests):
+    """
+    Mock une session qui crash
+    """
+    # Le flush() entrainera un crash
+    db_session_for_tests.flush = MagicMock(
+        side_effect=OperationalError("Unexpected Crash", params=None, orig=None)
+    )
+    # On "espionne" le rollback
+    db_session_for_tests.rollback = MagicMock(wraps=db_session_for_tests.rollback)
+    return db_session_for_tests

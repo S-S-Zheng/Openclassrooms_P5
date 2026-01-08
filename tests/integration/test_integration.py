@@ -10,7 +10,7 @@ import pytest
 
 @pytest.mark.integration
 def test_functional_pipeline_real_model(ml_model):
-    """Test d'intégration des artefacts."""
+    """Test d'intégration du modele ML uniquement."""
     try:
         ml_model.load()  # Charge fichiers locaux
     except Exception as e:

@@ -63,12 +63,6 @@ jobs:
       POSTGRES_DB_TEST: ${{ secrets.POSTGRES_DB_TEST }}
       POSTGRES_HOST_TEST: ${{ secrets.POSTGRES_HOST_TEST }}
       POSTGRES_PORT_TEST: ${{ secrets.POSTGRES_PORT_TEST }}
-      # du a database.py
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER_TEST }}
-      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT_TEST }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_TEST }}
-      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST_TEST }}
-      POSTGRES_DB: ${{ secrets.POSTGRES_DB_TEST }}
     services:
       # service lance un conteneur docker séparé d'où l'env a réiterer
       # postgre attend nécéssairement les variables nommés ci-dessous (d'ou pas de _TEST)

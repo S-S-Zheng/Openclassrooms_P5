@@ -6,54 +6,72 @@ Peut se lancer en tant que tel.
 
 # imports
 
+import time
+
 import pandas as pd
 
 from app.db.database import get_db_contextmanager
 from app.db.models_db import PredictionRecord
 from app.utils.hash_id import generate_feature_hash
+from app.utils.logger_db import closing_log, init_log
 
 # =============================
 
 
 def import_csv(file_path: str):
+    start_time = time.time()
     df = pd.read_csv(file_path)
     # Remplacer les NaN par None (car NaN n'est pas un JSON valide)
     df = df.where(pd.notnull(df), None)
 
     with get_db_contextmanager() as db:
-        print("Importation de données historique ...")
-        new_records = []
-        for _, row in df.iterrows():
-            features = row.to_dict()
-            # on retire la target pour ne hasher que les features
-            target = features.pop("a_quitte_l_entreprise", None)
+        try:
+            # L'endpoint de l'import n'existe pas
+            log_entry = init_log(db, "/import")
+            print("Importation de données historique ...")
 
-            unique_id = generate_feature_hash(features)
-            # Vérification si cet ID existe déjà
-            if db.get(PredictionRecord, unique_id):
-                continue
+            new_records = []
+            for _, row in df.iterrows():
+                features = row.to_dict()
+                # on retire la target pour ne hasher que les features
+                target = features.pop("a_quitte_l_entreprise", None)
 
-            # On constitue un dictionnaire complet qui répond aux exigences de l'UML
-            assemble = {
-                "id": unique_id,
-                "inputs": features,
-                "prediction": int(target) if target is not None else None,
-                "confidence": 1.0,  # données historique donc forcement 1.0
-                "class_name": "Démissionnaire" if target == 1 else "Employé",
-                "a_quitte_l_entreprise": int(target) if target is not None else None,
-            }
-            assemble.update(features)
+                unique_id = generate_feature_hash(features)
+                # Vérification si cet ID existe déjà
+                if db.get(PredictionRecord, unique_id):
+                    continue
 
-            # On unpack suivant le model UML
-            record = PredictionRecord(**assemble)
-            new_records.append(record)
+                # On constitue un dictionnaire complet qui répond aux exigences de l'UML
+                assemble = {
+                    "id": unique_id,
+                    "inputs": features,
+                    "prediction": int(target) if target is not None else None,
+                    "confidence": 1.0,  # données historique donc forcement 1.0
+                    "class_name": "Démissionnaire" if target == 1 else "Employé",
+                    "a_quitte_l_entreprise": (
+                        int(target) if target is not None else None
+                    ),
+                }
+                assemble.update(features)
 
-        if new_records:
-            db.add_all(new_records)
-            db.commit()
-            print("Importation réussie.")
-        else:
-            print("Pas d'importation nécéssaire")
+                # On unpack suivant le model UML
+                record = PredictionRecord(**assemble)
+                new_records.append(record)
+
+            if new_records:
+                db.add_all(new_records)
+                db.flush()  # permettra d'anticper les erreurs SQL
+                closing_log(db, log_entry, start_time, status_code=201)
+                print("Importation réussie.")
+            else:
+                # code 204 = No content
+                closing_log(db, log_entry, start_time, status_code=204)
+                print("Pas d'importation nécéssaire")
+
+        except Exception as e:
+            db.rollback()
+            print(f"Erreur lors de l'importation : {e}")
+            raise e
 
 
 if __name__ == "__main__":
