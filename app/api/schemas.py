@@ -1,5 +1,16 @@
 """
-Modèles de schémas Pydantic pour les requêtes et réponses API
+Module de définition des schémas Pydantic pour l'API.
+
+Ce module définit les contrats d'interface (Data Transfer Objects) pour les requêtes
+et les réponses de l'API FastAPI. Il inclut une couche de validation métier robuste
+pour garantir que les données envoyées au modèle CatBoost respectent les plages
+de valeurs attendues.
+
+Schémas principaux :
+    - PredictionInput : Données d'entrée pour l'inférence avec validation métier.
+    - PredictionOutput : Résultat de la prédiction (classe et confiance).
+    - FeatureImportanceOutput : Liste des variables les plus influentes.
+    - ModelInfoOutput : Métadonnées et configuration du modèle ML.
 
 | Endpoint               | Méthode ML                       |
 | ---------------------- | -------------------------------- |
@@ -9,7 +20,6 @@ Modèles de schémas Pydantic pour les requêtes et réponses API
 | `/model-info`          | attributs du modèle              |
 """
 
-from datetime import datetime  # noqa:F401
 from typing import Dict, List, Tuple, Union
 
 # Imports
@@ -21,6 +31,14 @@ from pydantic import BaseModel, Field, field_validator
 # Schéma pour les entrées de prédiction
 # L'ordre des features est garantie par feature_names dans MLModel
 class PredictionInput(BaseModel):
+    """
+    Schéma d'entrée pour la prédiction d'attrition.
+
+    Ce modèle valide la présence des 21 caractéristiques obligatoires requises
+    par le modèle CatBoost et applique des contraintes de logique métier
+    (ex: âge entre 18 et 65 ans).
+    """
+
     features: Dict[str, Union[str, float, int]] = Field(
         ...,
         # Pydantic v2 oblige a avoir une liste
@@ -55,7 +73,21 @@ class PredictionInput(BaseModel):
     @classmethod
     def validate_business_logic(cls, features_dict: dict):
         """
-        logique métier avec les 21 features utilisées pour entrainé CatBoostClassifier
+        Applique les règles de validation métier sur les caractéristiques d'entrée.
+
+        Vérifie :
+            1. La présence de tous les champs obligatoires.
+            2. La cohérence des valeurs numériques (min/max).
+            3. La validité des catégories pour les variables qualitatives.
+
+        Args:
+            features_dict (dict): Dictionnaire brut reçu par l'API.
+
+        Raises:
+            ValueError: Si un champ manque ou si une règle métier est violée.
+
+        Returns:
+            dict: Le dictionnaire validé.
         """
         mandatory_fields = [
             "age",
@@ -127,6 +159,10 @@ class PredictionInput(BaseModel):
 
 # Schéma pour les sorties de prédiction
 class PredictionOutput(BaseModel):
+    """
+    Schéma de réponse après une prédiction.
+    """
+
     prediction: float = Field(..., description="Classe prédite (0 ou 1)")
     confidence: float = Field(
         ..., ge=0.0, le=1.0, description="Probabilité associée à la prédiction"
@@ -139,6 +175,10 @@ class PredictionOutput(BaseModel):
 
 # Schéma pour les importances des features
 class FeatureImportanceOutput(BaseModel):
+    """
+    Schéma de réponse pour l'importance des variables.
+    """
+
     top_features: List[Tuple[str, float]] = Field(
         ...,
         description="Liste décroiss des features les plus influentes (nom_feature, shapley)",
@@ -150,16 +190,32 @@ class FeatureImportanceOutput(BaseModel):
 
 # Métadatas du modèle
 class ModelInfoOutput(BaseModel):
-    model_type: str
-    n_features: int
-    feature_names: List[str]
-    cat_features: List[str]
-    num_features: List[str]
-    classes: List[str]
-    threshold: float
+    """
+    Schéma de réponse détaillant la configuration interne du modèle ML.
+    """
+
+    model_type: str = Field(
+        ..., description="Algorithme utilisé (ex: CatBoostClassifier)"
+    )
+    n_features: int = Field(..., description="Nombre total de variables d'entrée")
+    feature_names: List[str] = Field(
+        ..., description="Noms des variables dans l'ordre attendu"
+    )
+    cat_features: List[str] = Field(
+        ..., description="Liste des variables catégorielles"
+    )
+    num_features: List[str] = Field(..., description="Liste des variables numériques")
+    classes: List[str] = Field(..., description="Labels des classes de prédiction")
+    threshold: float = Field(..., description="Seuil de décision optimisé")
 
 
 # Erreur standardisée
 class ErrorResponse(BaseModel):
-    error: str
-    detail: str | None = None
+    """
+    Schéma standardisé pour les messages d'erreur de l'API.
+    """
+
+    error: str = Field(..., description="Type ou titre de l'erreur")
+    detail: str | None = Field(
+        None, description="Détails supplémentaires sur la cause de l'erreur"
+    )

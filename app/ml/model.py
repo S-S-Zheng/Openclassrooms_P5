@@ -1,5 +1,10 @@
 """
-Charge le modèle catboost optimisé pré-entrainé et gère ses commandes
+Module wrapper pour le modèle de Machine Learning CatBoost.
+
+Ce module encapsule toute la logique liée au modèle pré-entraîné : chargement des
+artefacts (modèle compressé, liste des variables, seuil de classification),
+prétraitement des données d'entrée, inférence avec gestion de seuil personnalisé
+et analyse de l'importance des caractéristiques (explicabilité).
 """
 
 import logging  # sert a la gestion de logs de python
@@ -21,7 +26,22 @@ BASE_DIR = Path(__file__).resolve().parent / "model/datas/results"
 
 
 class MLModel:
-    """Classe pour gérer le modèle ML"""
+    """
+    Classe de gestion du cycle de vie et de l'inférence du modèle CatBoost.
+
+    Cette classe sert d'interface entre l'API et le modèle de classification. Elle
+    assure que les données entrantes sont formatées selon l'ordre appris lors de
+    l'entraînement et permet d'appliquer un seuil de décision (threshold) optimisé
+    pour maximiser le score métier (ex: rappel ou F1-score).
+
+    Attributes:
+        model (CatBoostClassifier): L'instance du modèle chargé.
+        feature_names (List[str]): Liste ordonnée des variables d'entrée.
+        cat_features (List[str]): Liste des variables identifiées comme catégorielles.
+        num_features (List[str]): Liste des variables identifiées comme numériques.
+        threshold (float): Seuil de probabilité pour la classification binaire.
+        classes (List[str]): Noms des classes cibles (['Employé', 'Démissionnaire']).
+    """
 
     def __init__(
         self,
@@ -29,6 +49,14 @@ class MLModel:
         feature_names_path: str = BASE_DIR / "feature_names/feature_names.pkl",
         threshold_path: str | None = BASE_DIR / "threshold_opt/thresh_opt.pkl",
     ):
+        """
+        Initialise les chemins vers les artefacts du modèle.
+
+        Args:
+            model_path (Path): Chemin vers le fichier .cbm (format natif CatBoost).
+            feature_names_path (Path): Chemin vers le pickle contenant l'ordre des colonnes.
+            threshold_path (Path, optional): Chemin vers le seuil de décision optimisé.
+        """
         self.model_path = model_path
         self.feature_names_path = feature_names_path
         self.threshold_path = threshold_path
@@ -43,6 +71,16 @@ class MLModel:
         self.classes = ["Employé", "Démissionnaire"]  # Codé en dur
 
     def load(self) -> None:
+        """
+        Charge en mémoire le modèle et ses fichiers de configuration associés.
+
+        Cette méthode initialise l'objet CatBoost, restaure la liste des features
+        et le seuil. Elle identifie également automatiquement les types de variables
+        (numériques vs catégorielles) via les métadonnées du modèle.
+
+        Raises:
+            FileNotFoundError: Si l'un des artefacts critiques est manquant.
+        """
         # Charge le modele
         if not self.model_path.exists():
             logger.error(f"Le fichier modèle n'existe pas: {self.model_path}")
@@ -85,7 +123,10 @@ class MLModel:
             self.threshold = self.threshold.item()
 
     def _identify_features(self):
-        """Identifie les colonnes numériques et catégorielles."""
+        """
+        Sépare les variables en listes catégorielles et numériques.
+        Utilise les indices internes stockés dans le modèle CatBoost.
+        """
         cat_idx = self.model.get_cat_feature_indices()
         self.cat_features = [self.feature_names[i] for i in cat_idx]
         self.num_features = [
@@ -94,17 +135,14 @@ class MLModel:
 
     def get_model_info(self) -> dict:
         """
-        Compile la métadatas du modèle
+        Expose les métadonnées techniques du modèle pour l'API.
 
-        SORTIES:
+        Returns:
+            dict: Dictionnaire contenant le type de modèle, le nombre de features,
+                les noms des variables par type, les classes et le seuil.
 
-        model_type: str\n
-        n_features: int\n
-        feature_names: List[str]
-        cat_features: List[str] features catégorielles\n
-        num_features: List[str] features numériques\n
-        classes: List[str]\n
-        threshold: float | None\n
+        Raises:
+            ValueError: Si le modèle n'a pas été chargé préalablement.
         """
 
         if self.model is None:
@@ -122,15 +160,24 @@ class MLModel:
 
     def predict(self, features: Dict[str, float]) -> Tuple[int, float, str]:
         """
-        Réalise une prédiction
+        Réalise une inférence à partir d'un dictionnaire de caractéristiques.
 
-        ENTREES:
+        Le processus comprend la conversion en DataFrame, la validation de la
+        présence des colonnes, le réordonnancement selon le schéma d'entraînement
+        et l'application du seuil de décision.
 
-        features: Dictionnaire des features
+        Args:
+            features (Dict[str, any]): Dictionnaire des variables d'entrée.
 
-        SORTIES:
+        Returns:
+            Tuple[int, float, str]: Un tuple contenant :
+                - prediction (int): 0 ou 1.
+                - confidence (float): Score de probabilité (0.0 à 1.0).
+                - class_name (str): Label humain de la prédiction.
 
-        Tuple (prediction, confiance, classe)
+        Raises:
+            ValueError: Si le modèle est absent ou si les features fournies
+                ne correspondent pas à l'attendu.
         """
 
         if self.model is None:
@@ -165,7 +212,14 @@ class MLModel:
 
     def get_feature_importance(self, top_n: int = 5) -> List[Tuple[str, float]]:
         """
-        Retourne les top_n features les plus influentes
+        Calcule l'importance des variables (Global Feature Importance).
+
+        Args:
+            top_n (int): Nombre de variables les plus influentes à retourner.
+
+        Returns:
+            List[Tuple[str, float]]: Liste de tuples (nom_variable, importance)
+                triée par importance décroissante.
         """
 
         if self.model is None:

@@ -1,5 +1,11 @@
 """
-Tests du modèle ML
+Suite de tests unitaires pour la classe MLModel.
+
+Ce module valide le comportement interne du wrapper de modèle CatBoost.
+Il utilise intensivement le mockage pour simuler les artefacts du modèle
+(fichiers .cbm, .pkl) et l'objet CatBoostClassifier lui-même, garantissant
+que la logique de chargement, de prédiction et d'analyse est robuste
+face à diverses configurations et erreurs de fichiers.
 """
 
 import logging
@@ -15,7 +21,7 @@ from app.ml.model import MLModel
 
 # test methode init() ()
 def test_init(ml_model):
-
+    """Vérifie l'état initial par défaut d'une nouvelle instance MLModel."""
     assert ml_model.model is None
     assert ml_model.feature_names is None
     assert ml_model.cat_features is None
@@ -30,7 +36,10 @@ def test_init(ml_model):
 # Happy path + threshold limite
 @pytest.mark.parametrize("test_threshold", [0.6, None])
 def test_get_model_info(mock_catboost, test_threshold, ml_model):
-
+    """
+    Vérifie la compilation correcte des métadonnées du modèle.
+    Teste la structure du dictionnaire retourné avec et sans seuil personnalisé.
+    """
     ml_model.model = mock_catboost
     ml_model.feature_names = ml_model.model.feature_names_
     cat_idx = ml_model.model.get_cat_feature_indices()
@@ -58,7 +67,7 @@ def test_get_model_info(mock_catboost, test_threshold, ml_model):
 
 # Echec de chargement du modele
 def test_get_model_info_not_loaded(ml_model):
-
+    """Vérifie qu'une erreur est levée si l'on demande les infos d'un modèle non chargé."""
     ml_model.model = None
 
     with pytest.raises(ValueError):
@@ -73,7 +82,10 @@ def test_get_model_info_not_loaded(ml_model):
 def test_load_model_success(
     tmp_path, mock_pickle, mock_catboost, monkeypatch, ml_model
 ):
-
+    """
+    Teste le scénario nominal de chargement complet du modèle.
+    Valide l'intégration entre le binaire CatBoost, les noms de features et le seuil.
+    """
     model_file = tmp_path / "model.cbm"
     features_file = tmp_path / "feature_names.pkl"
     threshold_file = tmp_path / "thresh_opt.pkl"
@@ -110,6 +122,11 @@ def test_load_model_success(
 def test_load_model_fallback_pickle(
     tmp_path, mock_pickle, mock_catboost, monkeypatch, caplog
 ):
+    """
+    Vérifie le mécanisme de repli (fallback) via Pickle.
+    Si le modèle CatBoost ne contient pas les noms de features, ils doivent être
+    chargés depuis le fichier de sauvegarde externe.
+    """
     # On simule un modèle qui n'a pas enregistré les noms
     mock_catboost.feature_names_ = None
     monkeypatch.setattr("app.ml.model.CatBoostClassifier", lambda: mock_catboost)
@@ -144,6 +161,7 @@ def test_load_model_fallback_pickle(
 def test_load_model_fallback_pickle_load_dict(
     tmp_path, mock_pickle, mock_catboost, monkeypatch
 ):
+    """Vérifie que le chargement des noms de features gère le format dictionnaire."""
     mock_catboost.feature_names_ = None
     monkeypatch.setattr("app.ml.model.CatBoostClassifier", lambda: mock_catboost)
 
@@ -178,6 +196,7 @@ def test_load_model_fallback_pickle_load_dict(
 def test_load_model_failed(
     tmp_path,
 ):
+    """Vérifie que l'instance reste à None si le fichier binaire du modèle est introuvable."""
     model_file = tmp_path / "model.cbm"
     features_file = tmp_path / "feature_names.pkl"
     threshold_file = tmp_path / "thresh_opt.pkl"
@@ -197,9 +216,7 @@ def test_load_model_failed(
 
 # fichier liste des features absente
 def test_load_feature_names_absent(tmp_path, caplog, mock_catboost, monkeypatch):
-    """
-    Vérifie que si le fichier threshold absent, on log une erreur et on continue
-    """
+    """Vérifie le comportement et la journalisation d'erreur si le fichier de features manque."""
     # On simule un modèle qui n'a pas enregistré les noms
     mock_catboost.feature_names_ = None
     monkeypatch.setattr("app.ml.model.CatBoostClassifier", lambda: mock_catboost)
@@ -218,9 +235,7 @@ def test_load_feature_names_absent(tmp_path, caplog, mock_catboost, monkeypatch)
 
 # fichier seuil de validation absent
 def test_load_threshold_absent(tmp_path, caplog):
-    """
-    Vérifie que si le fichier threshold absent, on log une erreur et on continue
-    """
+    """Vérifie le comportement et la journalisation d'erreur si le fichier de seuil manque."""
     threshold_file = tmp_path / "thresh_opt.pkl"
 
     ml = MLModel(threshold_path=threshold_file)
@@ -237,7 +252,7 @@ def test_load_threshold_absent(tmp_path, caplog):
 # test predict() (model nn chargé, nb features diff, seuil par défaut ou opt)
 # predict - CAS modele non chargé
 def test_predict_model_not_loaded(fake_dict, ml_model):
-
+    """S'assure qu'une prédiction est impossible sans chargement préalable."""
     with pytest.raises(ValueError):
         ml_model.predict(fake_dict)
 
@@ -247,7 +262,7 @@ def test_predict_model_not_loaded(fake_dict, ml_model):
 
 # predict - CAS features manquantes
 def test_predict_missing_features(mock_catboost, fake_dict, ml_model):
-
+    """Vérifie le rejet d'un dictionnaire d'entrée incomplet."""
     ml_model.model = mock_catboost
     ml_model.feature_names = ["f1", "f2", "f3", "f4", "f6"]
     ml_model.threshold = 0.6
@@ -261,7 +276,7 @@ def test_predict_missing_features(mock_catboost, fake_dict, ml_model):
 
 # predict - CAS nombre de features différents
 def test_predict_unexpected_features(mock_catboost, fake_dict, ml_model):
-
+    """Vérifie le rejet si le nombre de caractéristiques fournies est incorrect."""
     ml_model.model = mock_catboost
     ml_model.feature_names = ["f1", "f2", "f3", "f4"]
     ml_model.threshold = 0.6
@@ -276,7 +291,10 @@ def test_predict_unexpected_features(mock_catboost, fake_dict, ml_model):
 # predict - CAS seuil de validation
 @pytest.mark.parametrize("thresh", [0.6, None])
 def test_predict_with_threshold(mock_catboost, thresh, ml_model):
-
+    """
+    Valide la logique de prédiction binaire.
+    Compare le comportement entre le seuil par défaut du modèle et le seuil optimisé.
+    """
     ml_model.model = mock_catboost
     ml_model.feature_names = ml_model.model.feature_names_
     ml_model.threshold = thresh
@@ -304,7 +322,10 @@ def test_predict_with_threshold(mock_catboost, thresh, ml_model):
 # Happy path
 # (model non chargé, feature_names non défini, top_n)
 def test_get_feature_importance(mock_catboost, ml_model):
-
+    """
+    Vérifie l'extraction et le tri des variables les plus importantes.
+    S'assure notamment de la conversion des scores en types float natifs (compatibilité JSON).
+    """
     ml_model.model = mock_catboost
     ml_model.feature_names = ml_model.model.feature_names_
 
@@ -324,7 +345,7 @@ def test_get_feature_importance(mock_catboost, ml_model):
 
 # Echec de chargement du modele
 def test_get_feature_importance_not_loaded(ml_model):
-
+    """Vérifie la levée d'erreur si l'analyse d'importance est appelée sur un modèle vide."""
     ml_model.model = None
 
     with pytest.raises(ValueError):
@@ -337,6 +358,7 @@ def test_get_feature_importance_not_loaded(ml_model):
 # Echec de chargement des features
 @pytest.mark.parametrize("undefined", [[], None])
 def test_feature_names_not_loaded(mock_catboost, undefined, ml_model):
+    """Vérifie que l'importance ne peut être calculée si les noms des variables sont absents."""
     ml_model.model = mock_catboost
     ml_model.feature_names = undefined
 

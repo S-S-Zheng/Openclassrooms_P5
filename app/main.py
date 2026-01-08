@@ -1,10 +1,14 @@
 """
-Point d'entrée de l'application
+Point d'entrée principal de l'application FastAPI.
+
+Ce module assemble les différents composants de l'architecture :
+1. Orchestre le cycle de vie de l'application (Lifespan) pour le chargement du modèle.
+2. Centralise l'inclusion des routeurs spécialisés (Inférence, Importance, Métadonnées).
+3. Définit les endpoints de base comme la vérification de l'état (Healthcheck).
 """
 
 from contextlib import asynccontextmanager
 
-# ==================== Imports ==========================
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
@@ -13,6 +17,8 @@ from app.api.routes.model_info import router as model_info_router
 from app.api.routes.predict import router as predict_router
 from app.ml.model import MLModel
 
+# ==================== Imports ==========================
+
 
 # assynccontextmanager est un décorateur qui permet de définir une fonction
 # capable de gérer une phase avant de démarrage et une après d'arrêt.
@@ -20,6 +26,21 @@ from app.ml.model import MLModel
 # du serveur ce qui permet de maintenit l'état tant que le serveur est en ON
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Gère le cycle de vie de l'application (Démarrage et Arrêt).
+
+    Tout le code situé avant l'instruction 'yield' est exécuté une seule fois
+    lors du lancement du serveur. Cela permet d'initialiser les ressources lourdes
+    (modèle ML) et de les maintenir en mémoire RAM tout au long de la session.
+
+    Actions au démarrage :
+        - Instanciation de la classe MLModel.
+        - Chargement des artefacts (modèle, features, seuil).
+        - Injection de l'instance dans 'app.state' pour un accès global via les requêtes.
+
+    Args:
+        app (FastAPI): L'instance de l'application.
+    """
     # ============== Phase de démarrage ================
     # on charge une seule fois les données pour optimiser la RAM
     model_instance = MLModel()
@@ -33,22 +54,27 @@ async def lifespan(app: FastAPI):
 
 
 # ==================== API =============================
+
+
 app = FastAPI(
     title="ML Prediction API",
-    description="API REST pour exposer le CBC des démissions",
-    version="0.2.0",
+    description="API REST exposant un modèle de classification CatBoost pour la prédiction "
+    "du risque de démission des collaborateurs.",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
-# ==================== Routes ==========================
 
-# include_router permet de centraliser
-# le wiring, rend scalable, lisible et testable
+# ==================== Montage des Routers ==========================
+
+
+# Inclusion des modules de routes pour une architecture modulaire et scalable
 app.include_router(predict_router)
 app.include_router(feature_importance_router)
 app.include_router(model_info_router)
 
-# ==================== ENDPOINTS ========================
+
+# ==================== Endpoints Génériques ========================
 
 
 # /health
@@ -57,7 +83,14 @@ app.include_router(model_info_router)
 @app.get("/health", tags=["Health"])
 def healthcheck():
     """
-    Endpoint simple pour vérifier que l'API fonctionne
+    Vérifie la disponibilité opérationnelle du service.
+
+    Ce endpoint est crucial pour les outils de monitoring.
+    Il doit rester indépendant des ressources externes pour
+    isoler les pannes réseau/modèle de la panne serveur.
+
+    Returns:
+        dict: Un dictionnaire indiquant le statut opérationnel.
     """
     return {"status": "ok"}
 
@@ -67,6 +100,12 @@ def healthcheck():
 @app.get("/", tags=["Root"], include_in_schema=False)
 def root():
     """
-    Redirige vers la doc Swagger
+    Point d'entrée racine.
+
+    Redirige automatiquement l'utilisateur vers la documentation Swagger
+    interactive (/docs) pour faciliter l'exploration de l'API.
+
+    Returns:
+        RedirectResponse: Redirection vers l'interface utilisateur Swagger.
     """
     return RedirectResponse(url="/docs")
