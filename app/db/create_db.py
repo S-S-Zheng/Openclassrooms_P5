@@ -1,5 +1,4 @@
-# Ce script est un utilitaire.
-# Le placer dans app/ permet d'importer facilement models_db et database pour créer les tables.
+# Placer dans app/ permet d'importer facilement models_db et database pour créer les tables.
 
 # imports
 import sys
@@ -7,7 +6,7 @@ from pathlib import Path
 
 from app.db.base import Base
 from app.db.database import base_engine
-from app.db.models_db import PredictionRecord  # noqa: F401
+from app.db.models_db import PredictionRecord, RequestLog  # noqa: F401
 
 # Ajout du dossier racine au path pour permettre les imports relatifs
 root_path = Path(__file__).resolve().parent.parent

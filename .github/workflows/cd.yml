@@ -75,6 +75,7 @@ jobs:
 
           # Dir utils
           cp app/utils/hash_id.py hf_deploy/app/utils/
+          cp app/utils/logger_db_id.py hf_deploy/app/utils/
 
           # Dir ml
           cp app/ml/model.py hf_deploy/app/ml/

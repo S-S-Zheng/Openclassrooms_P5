@@ -1,3 +1,4 @@
+# Projet 5: Déployer un modèle de Machine Learning
 <!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
 <a id="readme-top"></a>
 <!--
@@ -8,8 +9,6 @@
 *** Thanks again! Now go create something AMAZING! :D
 -->
 
-
-
 <!-- PROJECT SHIELDS -->
 <!--
 *** I'm using markdown "reference style" links for readability.
@@ -19,7 +18,6 @@
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
 
-
 <!-- A décommenter si besoin dans le futur
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
@@ -28,7 +26,6 @@
 [![project_license][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 -->
-
 
 <!-- PROJECT LOGO -->
 <br />
@@ -52,8 +49,6 @@
     <a href="https://github.com/S-S-Zheng/Openclassrooms_data_scientist_projects.git/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
 </div>
-
-
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -84,8 +79,6 @@
   </ol>
 </details>
 
-
-
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
@@ -93,34 +86,32 @@
 
 Dans ce projet, notre objectif est de déployer le modèle ML du projet 4: Classifier automatiquement des informations afin de la rendre accessible via une API.  
 Le projet incluera:
+
 1. Un dépôt GitHub contenant le code, l'environnement et la documentation.
-2. Une infrastructure CI/CD permettant de tester le modèle et de permettre son déploiement rapide et fiable.
+2. Une infrastructure CI/CD permettant de garantir la qualité du code, facilitera les tests et permettra un déploiement fiable du modèle.
 3. Une API et sa documentation pour exposer le modèle.
 4. Une base de donnée PostgreSQL pour intéragir avec le ML.
 5. Un ensemble de tests unitaires et fonctionnels servant à garantir la fiabilité et la robustesse du modèle.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 ### Built With
 
 Le projet 5:
+
 * [![GitHub][GitHub.com]][GitHub-url]
 * [![Hugging Face Spaces][Hugging Face Spaces.com]][Hugging Face Spaces-url]
 * [![GitHub Actions][GitHub Actions.com]][GitHub Actions-url]
 * [![FastAPI][FastAPI.com]][FastAPI-url]
-* [![Gradio][Gradio.com]][Gradio-url]
 * [![Pydantic][Pydantic.com]][Pydantic-url]
 * [![PostgreSQL][PostgreSQL.com]][PostgreSQL-url]
 * [![SQLAlchemy][SQLAlchemy.com]][SQLAlchemy-url]
 * [![Pytest-cov][Pytest-cov.com]][Pytest-cov-url]
 * [![Swagger][Swagger.com]][Swagger-url]
-* [![OpenAPI][OpenAPI.com]][OpenAPI-url]
-* [![MkDocs][MkDocs.com]][MkDocs-url]
 * [![Sphinx][Sphinx.com]][Sphinx-url]
 
 Le modèle du projet 4:
+
 * [![Python][Python.com]][Python-url]
 * [![Poetry][Poetry.com]][Poetry-url]
 * [![Jupyter][Jupyter.com]][Jupyter-url]
@@ -132,119 +123,218 @@ Le modèle du projet 4:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+Suivez ces instructions pour installer le projet localement et lancer l'API sur votre machine de développement.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* python >= 3.13
-  ```sh
-  # Verifier la version
-  python --version
-  # Installer python
-  sudo apt install python
-  # Mettre à jour la version
-  sudo apt update python
-  sudo apt upgrade python
-  ```
-* pipx >= 1.7 & poetry >= 2.0
-  ```bash
-  # Vérifier la version
-  pipx --version
-  poetry --version
-  # Installer pipx et poetry
-  pip install pipx
-  python -m pipx ensurepath
-  # Fermer le terminal et en rouvrir un nouveau
-  pipx install poetry
-  ```
+Le projet nécessite Python 3.11+. Nous utilisons Poetry pour la gestion des dépendances et de l'environnement virtuel.
 
-### Installation
+* Python & Pip
 
-<!-- A suppr peut-être suivant l'avancement
-1. Get a free API Key at [https://example.com](https://example.com)
--->
-2. Clone the repo
-   ```sh
-   # Clone le dépôt en local
-   git clone https://github.com/S-S-Zheng/Openclassrooms_data_scientist_projects.git
-   # Ouvrir le dossier du ML
-   cd model
-   # Installer l'environnement virtuel et les dépendances via poetry
-   poetry install
-   # Ou à partir du requirements.txt
-   pip install -e .
-   ```
-<!-- A suppr peut-être suivant l'avancement
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
-5. Change git remote url to avoid accidental pushes to base project
-   ```sh
-   git remote set-url origin github_username/repo_name
-   git remote -v # confirm the changes
-   ```
--->
+```bash
+python --version
+# Si besoin d'installation (Debian/Ubuntu)
+sudo apt update && sudo apt install python3.11 python3-pip
+```
+
+* Poetry (Gestionnaire de dépendances)
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+# Ajoutez Poetry à votre PATH si nécessaire, puis vérifiez
+poetry --version
+```
+
+### Installation & Configuration
+
+#### Cloner le Dépôt
+
+```bash
+git clone https://github.com/S-S-Zheng/Openclassrooms_P5.git
+cd Openclassrooms_P5.git
+```
+
+#### Installer l'environnement Vous pouvez choisir entre Poetry (recommandé) ou un environnement virtuel classique
+
+* Via Poetry:
+
+```bash
+poetry install
+# Activez l'environnement
+poetry shell
+```
+
+* Via Pip:
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# venv\Scripts\activate   # Windows
+pip install -r requirements-dev.txt
+```
+
+#### Variables d'environnement Créez un fichier .env  et env.test à la racine pour configurer l'accès à votre base de données de test local (à créer) et distante Supabase
+
+* Création d'une base PostgreSQL locale:
+
+Installation de psql puis creation depuis le terminale
+
+* .env:
+
+```python
+SUPABASE_URL=votre_url_supabase
+SUPABASE_KEY=votre_cle_anonyme
+DB_PASSWORD=votre_mot_de_passe_db
+```
+
+* .env.test:
+
+```python
+SUPABASE_URL=votre_url_supabase
+SUPABASE_KEY=votre_cle_anonyme
+DB_PASSWORD=votre_mot_de_passe_db
+```
+
+#### Pour démarrer l'API FastAPI localement avec rechargement automatique (Hot Reload)
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+L'API sera disponible sur : [http://localhost:8000](http://localhost:8000). La documentation interactive (Swagger) sera accessible sur : [http://localhost:8000/docs](http://localhost:8000/docs).
+
+#### Avant de pousser vos modifications, vérifiez que l'ensemble de la suite de tests est au vert
+
+```bash
+# Lancer tous les tests avec rapport de couverture
+pytest tests/
+```
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<span style='color:red;font-weight:bold'> REPRENDRE A PARTIR D ICI (ctrl+shift+v pour preview md vscode)</span>
 
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+L'API expose plusieurs points d'entrée pour interagir avec le modèle de prédiction d'attrition :
+Prédiction individuelle : Envoyez un POST sur /predict/ avec les caractéristiques de l'employé.
+Analyse du modèle : Accédez à /feature-importance pour comprendre les facteurs clés.
+Documentation interactive : Une interface Swagger complète est disponible à la racine.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+### Exemple de requête de prédiction via cURL
+
+```text
+curl -X 'POST' \
+  'https://votre-space.huggingface.co/predict/' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "features": {
+      "age": 35,
+      "genre": "m",
+      "revenu_mensuel": 4500,
+      "frequence_deplacement": "occasionnel",
+      "heure_supplementaires": "non"
+    }
+```
+
+### Documentation Interactive (Swagger)
+
+Une fois l'API lancée, accédez à l'interface Swagger pour tester les endpoints en direct :
+
+* **Local** : `http://localhost:7860/docs`
+* **Production** : `https://huggingface.co/spaces/VOTRE_USERNAME/VOTRE_SPACE_NAME/docs`
+
+### Exemple de requête de prédiction
+
+Vous pouvez envoyer une requête POST au format JSON :
+
+```json
+{
+  "features": {
+    "age": 32,
+    "genre": "m",
+    "revenu_mensuel": 3500,
+    "statut_marital": "celibataire",
+    "heure_supplementaires": "non"
+    // ... remplissez les 21 colonnes
+  }
+}
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- Deployment -->
 ## Deployment
 
-This part is about how the ML has been deployed?
+Le déploiement est entièrement automatisé via une architecture MLOps :
+CI (GitHub Actions) : À chaque push, une suite de tests (Unitaire, Fonctionnel, Intégration) est lancée sur un environnement Python 3.11.
+Validation des Artefacts : Le pipeline vérifie l'intégrité du modèle CatBoost (.cbm) avant tout déploiement.
+CD (GitHub Actions) : Si les tests réussissent sur la branche main, le code est packagé et poussé vers Hugging Face Spaces.
+Hébergement Docker : L'API tourne dans un conteneur isolé sur les serveurs de Hugging Face.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- Authentication -->
 ## Authentication
 
-This part is about how one is authenticate?
+L'accès à la base de données Supabase est sécurisé via des variables d'environnement (secrets) injectées au moment du runtime, garantissant qu'aucun identifiant ne circule en clair dans le dépôt.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- Security -->
 ## Security
 
-This part is about the security
+La sécurité des données d'entrée est assurée par une double couche de validation :
+Validation de Schéma : Pydantic garantit que tous les types de données sont corrects.
+Validation métier (Business Logic) : Des règles strictes interdisent les valeurs aberrantes (ex: âge hors [18-65], revenus incohérents).
+Protection contre les doublons : Un système de Hash ID unique (SHA-256) pour chaque profil d'entrée évite la redondance dans la base de données et optimise les temps de réponse via un mécanisme de cache.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- Strategy of tests -->
+## Strategy of tests (a revoir pour son positionnement)
+
+Le projet utilise une pyramide de tests rigoureuse :
+Tests Unitaires (tests/unit/) : Vérification des schémas Pydantic et des 21 contraintes métier.
+Tests Fonctionnels (tests/functional/) : Validation des routes API, des codes de statut HTTP et des scénarios utilisateurs (Outliers, Missing features).
+Tests d'Intégration (tests/integration/) : Vérification de la persistance SQL (Supabase) et de la compatibilité des fichiers binaires du modèle ML.
+Pour lancer les tests localement avec couverture :
+
+```bash
+pytest --cov=app tests/
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- Techncal Doc -->
+##  Documentation Technique Complète
+
+La documentation détaillée des modules Python, générée via Sphinx, est disponible dans le dossier docs/_build/html ou consultable sur [GitHub Pages / Lien vers la doc].
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
+* [x] Création d'un dépôt Github pour le projet
+* [x] Création d'une classe qui regroupe les méthodes de ML
+* [x] Mise en place de tests - part 1
+* [x] Automatisation CI/CD (GitHub Actions) - part 1
+* [x] Création de l'API avec FastAPI
+* [x] Mise en place de tests - part 2
+* [x] Automatisation CI/CD (GitHub Actions) - part 2
+* [x] Mise en place de la base de données PostgreSQL (Supabase)
+* [x] Mise en place de tests - part 3
+* [x] Automatisation CI/CD (GitHub Actions) - part 3
+* [] Documentation Sphinx autogénérée
 
 See the [open issues](https://github.com/github_username/repo_name/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
-<!-- CONTRIBUTING -->
+<!-- CONTRIBUTING
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
@@ -260,13 +350,12 @@ Don't forget to give the project a star! Thanks again!
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Top contributors:
+### Top contributors
 
 <a href="https://github.com/github_username/repo_name/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=github_username/repo_name" alt="contrib.rocks image" />
 </a>
-
-
+-->
 
 <!-- LICENSE -->
 ## License
@@ -275,49 +364,22 @@ Distributed under the project_license. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
+Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - <email@email_client.com>
 
 Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* []()
-* []()
-* []()
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/github_username/repo_name.svg?style=for-the-badge
-[contributors-url]: https://github.com/github_username/repo_name/graphs/contributors
-
-[forks-shield]: https://img.shields.io/github/forks/github_username/repo_name.svg?style=for-the-badge
-[forks-url]: https://github.com/github_username/repo_name/network/members
-
-[stars-shield]: https://img.shields.io/github/stars/github_username/repo_name.svg?style=for-the-badge
-[stars-url]: https://github.com/github_username/repo_name/stargazers
-
-[issues-shield]: https://img.shields.io/github/issues/github_username/repo_name.svg?style=for-the-badge
-[issues-url]: https://github.com/github_username/repo_name/issues
-
-[license-shield]: https://img.shields.io/github/license/github_username/repo_name.svg?style=for-the-badge
-[license-url]: https://github.com/github_username/repo_name/blob/master/LICENSE.txt
-
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/linkedin_username
 
 [product-screenshot]: images/Gemini_P5.png
 
@@ -346,6 +408,15 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 
 [JQuery.com]: https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white
 [JQuery-url]: https://jquery.com
+
+[Gradio.com]: https://img.shields.io/badge/Gradio-F97316?logo=Gradio&logoColor=white
+[Gradio-url]: https://www.gradio.app/
+
+[OpenAPI.com]: https://img.shields.io/badge/OpenAPI-6BA539?logo=openapiinitiative&logoColor=white
+[OpenAPI-url]: https://swagger.io/specification/
+
+[MkDocs.com]: https://img.shields.io/badge/MkDocs-526CFE?logo=materialformkdocs&logoColor=fff
+[MkDocs-url]: https://www.mkdocs.org/
 -->
 
 <!--My list of badges-->
@@ -361,9 +432,6 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 [FastAPI.com]: https://img.shields.io/badge/FastAPI-009485.svg?logo=fastapi&logoColor=white
 [FastAPI-url]: https://fastapi.tiangolo.com/
 
-[Gradio.com]: https://img.shields.io/badge/Gradio-F97316?logo=Gradio&logoColor=white
-[Gradio-url]: https://www.gradio.app/
-
 [Pydantic.com]: https://img.shields.io/badge/Pydantic-E92063?logo=Pydantic&logoColor=white
 [Pydantic-url]: https://docs.pydantic.dev/latest/
 
@@ -378,12 +446,6 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 
 [Swagger.com]: https://img.shields.io/badge/Swagger-85EA2D?logo=swagger&logoColor=173647
 [Swagger-url]: https://swagger.io/
-
-[OpenAPI.com]: https://img.shields.io/badge/OpenAPI-6BA539?logo=openapiinitiative&logoColor=white
-[OpenAPI-url]: https://swagger.io/specification/
-
-[MkDocs.com]: https://img.shields.io/badge/MkDocs-526CFE?logo=materialformkdocs&logoColor=fff
-[MkDocs-url]: https://www.mkdocs.org/
 
 [Sphinx.com]: https://img.shields.io/badge/Sphinx-000?logo=sphinx&logoColor=fff
 [Sphinx-url]: https://www.sphinx-doc.org/en/master/
@@ -410,5 +472,5 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 [Scikit-learn.com]: https://img.shields.io/badge/-scikit--learn-%23F7931E?logo=scikit-learn&logoColor=white
 [Scikit-learn-url]: https://scikit-learn.org/stable/index.html
 
-
+[CatBoost.com]: https://img.shields.io/badge/CatBoost-FF4632?logo=catboost&logoColor=white
 [CatBoost-url]: https://catboost.ai/docs/en/
