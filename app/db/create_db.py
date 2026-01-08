@@ -1,3 +1,11 @@
+"""
+Module d'initialisation du schéma de la base de données.
+
+Ce module fournit les outils nécessaires pour synchroniser les modèles ORM avec
+la base de données physique. Il permet la création des tables ainsi que leur
+réinitialisation (drop & create) pour les environnements de test ou de développement.
+"""
+
 # Placer dans app/ permet d'importer facilement models_db et database pour créer les tables.
 
 # imports
@@ -17,6 +25,28 @@ sys.path.append(str(root_path))
 
 
 def init_db(reset_tables=False, engine=base_engine):
+    """
+    Initialise la structure de la base de données PostgreSQL.
+
+    Cette fonction utilise les métadonnées de SQLAlchemy pour générer le schéma
+    SQL correspondant aux classes héritant de 'Base'. Elle peut être configurée
+    pour supprimer les tables existantes avant la création.
+
+    Args:
+        reset_tables (bool, optional): Si True, supprime toutes les tables existantes
+            avant de les recréer. Utile pour repartir d'une base vierge. Par défaut à False.
+        engine (sqlalchemy.engine.Engine, optional): L'instance du moteur de base de données
+            à utiliser. Par défaut, utilise 'base_engine' configuré pour Supabase/PostgreSQL.
+
+    Raises:
+        Exception: Relance toute exception survenant lors de la communication avec
+            le serveur de base de données (ex: erreur de connexion, droits insuffisants).
+
+    Note:
+        L'import de 'PredictionRecord' et 'RequestLog' est nécessaire ici, même s'ils
+        ne sont pas appelés explicitement, afin qu'ils soient enregistrés dans le registre
+        'Base.metadata' avant l'exécution de 'create_all'.
+    """
     if reset_tables:
         Base.metadata.drop_all(bind=engine)
     print("Initialisation de la base de données...")

@@ -1,3 +1,11 @@
+"""
+Module de définition des modèles de données ORM (Object-Relational Mapping).
+
+Ce module contient les schémas SQL pour PostgreSQL via SQLAlchemy. Il définit
+l'organisation des données stockées, incluant les enregistrements de prédictions
+détaillés et le système de journalisation (logging) pour la traçabilité des requêtes.
+"""
+
 # Pydantic définit la forme des données qui entrent/sortent,
 # SQLAlchemy définit la forme des données qui dorment en base.
 
@@ -14,6 +22,23 @@ from app.db.base import Base
 
 # Traçabilité
 class RequestLog(Base):
+    """
+    Modèle représentant les logs d'activité de l'API.
+
+    Stocke les métadonnées de chaque requête entrante pour permettre l'audit de performance
+    et la traçabilité des erreurs.
+    Chaque log peut être lié à un enregistrement de prédiction spécifique.
+
+    Attributes:
+        id (int): Clé primaire auto-incrémentée.
+        created_at (datetime): Horodatage de la requête (géré par le serveur SQL).
+        endpoint (str): Le point d'entrée API sollicité (ex: '/predict').
+        status_code (int): Le code de statut HTTP retourné (ex: 200, 422, 500).
+        response_time_ms (float): Temps de traitement de la requête en millisecondes.
+        prediction_id (str): Clé étrangère pointant vers l'ID unique de la prédiction associée.
+        prediction_record (relationship): Relation ORM vers l'objet PredictionRecord correspondant.
+    """
+
     __tablename__ = "request_logs"
 
     # Identifications
@@ -37,6 +62,30 @@ class RequestLog(Base):
 
 # Requete utilisateur
 class PredictionRecord(Base):
+    """
+    Modèle représentant une prédiction stockée et ses caractéristiques d'entrée.
+
+    Cette table contient l'ensemble des variables métier (features) envoyées par l'utilisateur,
+    le résultat du modèle ML, et une version sérialisée (JSONB) pour la flexibilité.
+    L'ID est un hash SHA-256 des entrées servant de mécanisme de dédoublonnage.
+
+    Attributes:
+        id (str): Hash unique des features servant de clé primaire.
+        created_at (datetime): Date d'enregistrement.
+        age (int): Âge de l'employé.
+        genre (str): Genre (m/f).
+        revenu_mensuel (int): Revenu mensuel.
+        # ... (autres colonnes de caractéristiques métier)
+        a_quitte_l_entreprise (int): Valeur réelle observée
+        (utilisée pour le réentraînement/historique).
+        inputs (JSONB): Copie de sauvegarde de l'intégralité des entrées au format JSON.
+        prediction (int): Classe prédite par le modèle (0 ou 1).
+        confidence (float): Score de probabilité associé à la prédiction.
+        class_name (str): Traduction textuelle de la classe (ex: 'Employé', 'Démissionnaire').
+        model_version (str): Version du modèle utilisé lors de l'inférence.
+        logs (relationship): Liste des logs de requêtes ayant sollicité cette prédiction précise.
+    """
+
     __tablename__ = "predictions"
 
     # Identifications

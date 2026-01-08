@@ -1,5 +1,12 @@
 """
-Test fonctionnel sur le vrai modele et les artefacts
+Test d'intégration du pipeline d'inférence avec les artefacts réels.
+
+Ce module effectue un test de "bout-en-bout" sur la couche ML en utilisant
+les véritables fichiers binaires (.cbm, .pkl) produits lors de la phase
+d'entraînement. Il garantit que le modèle chargé en local est compatible
+avec le code du wrapper MLModel et que les types de données produits
+en sortie sont strictement conformes aux attentes de l'API (notamment
+l'absence de types NumPy natifs non sérialisables).
 """
 
 # Imports
@@ -10,7 +17,22 @@ import pytest
 
 @pytest.mark.integration
 def test_functional_pipeline_real_model(ml_model):
-    """Test d'intégration du modele ML uniquement."""
+    """
+    Valide le chargement et l'inférence sur le modèle de production réel.
+
+    Ce test vérifie que :
+    1. Le modèle et ses métadonnées (features, seuils) sont accessibles et chargeables.
+    2. Un dictionnaire d'entrée généré dynamiquement selon le schéma du modèle
+        est correctement traité.
+    3. Les sorties (prediction, confidence) sont converties en types Python natifs
+        (int, float) pour éviter les erreurs de sérialisation JSON.
+
+    Args:
+        ml_model (MLModel): Instance réelle du wrapper de modèle.
+
+    Raises:
+        pytest.skip: Si les fichiers du modèle sont absents de l'environnement de test.
+    """
     try:
         ml_model.load()  # Charge fichiers locaux
     except Exception as e:

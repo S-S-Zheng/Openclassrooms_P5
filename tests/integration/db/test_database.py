@@ -1,5 +1,16 @@
 """
-Tests sur les features qui interagissent avec la DB
+Suite de tests d'intégration pour la couche de persistance et de base de données.
+
+Ce module valide l'intégralité du cycle de vie des données au sein du système :
+1. La gestion des sessions SQLAlchemy et du contexte de base de données.
+2. La persistance des prédictions (modèle métier) et des logs (modèle technique).
+3. L'intégrité référentielle, l'idempotence des enregistrements (hachage unique)
+    et la robustesse des transactions (rollbacks en cas de crash).
+4. Les scripts d'administration : initialisation du schéma, réinitialisation des
+    tables et importation de données historiques depuis des fichiers CSV.
+
+Chaque test utilise une base de données PostgreSQL de test isolée pour garantir
+qu'aucun effet de bord n'affecte les données de production.
 """
 
 # imports
@@ -20,7 +31,7 @@ from app.utils.logger_db import init_log
 
 
 def test_get_db(monkeypatch, TestingSession):
-    """Vérifie que get_db fournit une session valide et la ferme après."""
+    """Vérifie le cycle de vie du générateur de session et sa fermeture correcte."""
 
     # On force database.SessionLocal à utiliser la session de test
     monkeypatch.setattr(database, "SessionLocal", TestingSession)
@@ -38,7 +49,11 @@ def test_get_db(monkeypatch, TestingSession):
 
 
 def test_get_prediction(client, mock_ml_model, func_sample, db_session_for_tests):
-    """Vérifie que l'API utilise la DB si la donnée existe déjà."""
+    """
+    Vérifie le mécanisme de cache en base de données.
+    L'API doit retourner une prédiction existante si les features sont identiques,
+    sans solliciter le modèle ML.
+    """
     # On insère manuellement une prédiction lié a fun_sample dans la db
     existing_pred = PredictionRecord(
         id=generate_feature_hash(func_sample["features"]),
@@ -66,7 +81,7 @@ def test_get_prediction(client, mock_ml_model, func_sample, db_session_for_tests
 
 # Happy path
 def test_save_prediction(client, mock_ml_model, func_sample, db_session_for_tests):
-    """Vérifie qu'une nouvelle prédiction est bien insérée en base."""
+    """Valide l'insertion complète d'un résultat d'inférence via l'endpoint API."""
     mock_ml_model(should_fail=False)
     payload = func_sample
     expected_hash_id = generate_feature_hash(func_sample["features"])
@@ -94,8 +109,9 @@ def test_save_prediction(client, mock_ml_model, func_sample, db_session_for_test
 # Gestion de l'idempotence
 def test_save_prediction_unique_id(db_session_for_tests, func_sample):
     """
-    Vérifie que save_prediction ne crée pas de doublon si appelée deux fois
-    avec les mêmes features, mais retourne le même ID tout en créant les logs.
+    Vérifie l'idempotence basée sur le hash des features.
+    Deux appels avec des entrées identiques ne doivent créer qu'un seul
+    enregistrement 'PredictionRecord'.
     """
     features = func_sample["features"]
     pred_data = (1, 0.85, "Démissionnaire")
@@ -131,9 +147,7 @@ def test_save_prediction_unique_id(db_session_for_tests, func_sample):
 
 # Crash en cours d'opération
 def test_save_prediction_crash(db_session_broken_for_tests, func_sample):
-    """
-    Vérifie qu'en cas de crash lors d'une opération de sauvegarde, on rollback
-    """
+    """Vérifie que la transaction SQL est annulée (rollback) en cas d'erreur serveur."""
     features = func_sample["features"]
     pred_data = (1, 0.85, "Démissionnaire")
     log_1 = 1
@@ -150,10 +164,7 @@ def test_save_prediction_crash(db_session_broken_for_tests, func_sample):
 
 # Happy path
 def test_init_db(TestingEngine):
-    """
-    On vérifie que l'appel à init_db ne provoque pas d'erreur
-    et que les tables sont bien présentes.
-    """
+    """Vérifie que le schéma SQL est correctement créé au démarrage de l'application."""
     init_db(reset_tables=False, engine=TestingEngine)
 
     # Vérification physique de la présence de la table via l'inspecteur
@@ -168,9 +179,7 @@ def test_init_db(TestingEngine):
 
 # Reset fonctionnel
 def test_init_db_reset_table(TestingEngine, func_sample, TestingSession):
-    """
-    On vérifie que les tables sont bien présentes sont bien nettoyées.
-    """
+    """Vérifie que l'option de réinitialisation vide effectivement toutes les tables."""
     # On créée une session parallèle pour constituer une base non vide et
     # s'assurer que la donnée est présente
     with TestingSession() as temp_session:
@@ -208,9 +217,7 @@ def test_init_db_reset_table(TestingEngine, func_sample, TestingSession):
 
 # Echec de création de base
 def test_init_db_failed_init():
-    """
-    On vérifie que l'echec de connexion à la base renvoie une exception
-    """
+    """Vérifie la levée d'exception en cas de paramètres de connexion erronés."""
     fake_engine = create_engine("postgresql://user:wrong@localhost:9999/fake")
 
     with pytest.raises(Exception):
@@ -223,7 +230,8 @@ def test_init_db_failed_init():
 # Happy path
 def test_import_csv_success(monkeypatch, TestingSession, TestingEngine, fake_csv):
     """
-    Vérifie que le CSV est bien lu et inséré en base avec les bons IDs et le log
+    Valide le pipeline d'ingestion de données historiques.
+    Vérifie le mapping des colonnes CSV vers les champs de la base de données.
     """
     # On import chemin et données
     fake_file_path, fake_data = fake_csv
@@ -264,9 +272,7 @@ def test_import_csv_success(monkeypatch, TestingSession, TestingEngine, fake_csv
 
 # Unicité
 def test_import_csv_unique(fake_csv, TestingSession, monkeypatch, TestingEngine):
-    """
-    Vérifie que la data hist n'est pas ré enregistrer si déjà présente
-    """
+    """Vérifie que l'importation massive gère correctement les doublons de données."""
     # On import chemin et données
     fake_file_path, fake_data = fake_csv
 
@@ -300,9 +306,7 @@ def test_import_csv_unique(fake_csv, TestingSession, monkeypatch, TestingEngine)
 
 # Crash immédiat
 def test_import_csv_crash_instant(db_session_broken_for_tests, fake_csv, monkeypatch):
-    """
-    Vérifie qu'en cas de crash avant même d'ouvrir le log, on rollback
-    """
+    """Vérifie la sécurité transactionnelle lors d'un échec d'importation groupée."""
     fake_file_path, _ = fake_csv
     monkeypatch.setattr(database, "SessionLocal", lambda: db_session_broken_for_tests)
 

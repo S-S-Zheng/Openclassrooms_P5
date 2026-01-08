@@ -1,7 +1,11 @@
 """
-Router pour le endpoint /predict, permet d'associer la requete API \n
-a la méthode de la classe MLModel tel quel:\n
-POST /predict ==> route.predict() ==> MLModel.predict()
+Module de définition du router pour les prédictions d'attrition.
+
+Ce module constitue le point d'entrée principal de l'intelligence artificielle.
+Il orchestre le flux de données complet : réception de la requête, journalisation
+initiale, vérification de l'existence d'un cache en base de données, exécution
+de l'inférence par le modèle CatBoost, persistance du résultat et retour de la
+réponse à l'utilisateur.
 """
 
 # ====================== Imports ========================
@@ -24,7 +28,30 @@ router = APIRouter(prefix="/predict", tags=["Prediction"])
 @router.post("/", response_model=PredictionOutput)
 def predict(request: Request, payload: PredictionInput, db: Session = Depends(get_db)):
     """
-    Endpoint de prédiction du modèle ML.
+    Réalise une prédiction pour un employé donné.
+
+    Cette méthode suit la pipeline suivante :
+
+    1. **Logging** : Initialisation d'un enregistrement dans 'request_logs'.
+    2. **Mise en cache** : Vérification si les caractéristiques ont déjà été traitées
+       (via un hash SHA-256) pour retourner un résultat instantané.
+    3. **Inférence** : Si nouveau, appel de la méthode predict du modèle chargé.
+    4. **Persistance** : Sauvegarde des entrées et de la sortie dans 'predictions'.
+    5. **Finalisation** : Calcul du temps de réponse et mise à jour du log.
+
+    Args:
+        request (Request): Objet requête FastAPI pour accéder au modèle global.
+        payload (PredictionInput): Dictionnaire validé contenant les 21 features.
+        db (Session): Session de base de données injectée par dépendance.
+
+    Returns:
+        PredictionOutput: Résultat comprenant la prédiction (0/1), le score de
+        confiance et le nom de la classe.
+
+    Raises:
+        HTTPException: 503 si le modèle n'est pas chargé.
+        HTTPException: 422 en cas d'erreur de valeur lors de l'inférence.
+        HTTPException: 500 pour les erreurs serveur imprévues.
     """
     # On initialise le temps et le log
     start_time = time.time()

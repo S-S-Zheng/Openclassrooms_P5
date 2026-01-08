@@ -1,5 +1,15 @@
 """
-Test des schemas Pydantic utilises dans l'API.
+Suite de tests unitaires pour la validation des schémas Pydantic.
+
+Ce module vérifie que les contrats d'interface de l'API sont respectés et que
+la logique métier intégrée aux validateurs fonctionne comme prévu. Il couvre :
+1. La validation des données d'entrée (PredictionInput) incluant les types,
+    les champs obligatoires et les contraintes métier (outliers).
+2. La conformité des modèles de réponse (Output) et leur capacité de coercion.
+3. La robustesse des schémas de métadonnées et de gestion d'erreurs.
+
+L'objectif est de garantir qu'aucune donnée corrompue ne puisse atteindre
+le modèle ML et que les sorties de l'API soient toujours prévisibles.
 """
 
 # Imports
@@ -19,6 +29,7 @@ from app.api.schemas import (
 
 # Happy path
 def test_prediction_input_valid(func_sample):
+    """Vérifie qu'un dictionnaire de caractéristiques complet et valide est accepté."""
     obj = PredictionInput(features=func_sample["features"])
 
     assert obj.features == func_sample["features"]
@@ -29,12 +40,14 @@ def test_prediction_input_valid(func_sample):
 
 # features manquante
 def test_prediction_input_missing_features():
+    """Vérifie que l'absence totale de données déclenche une erreur de validation."""
     with pytest.raises(ValidationError):
         PredictionInput()
 
 
 # type de feature incorrect
 def test_prediction_input_wrong_type():
+    """Vérifie que des types de données incorrects (ex: liste au lieu d'int) sont rejetés."""
     with pytest.raises(ValidationError):
         PredictionInput(features={"age": [30], "genre": "m", "revenu_mensuel": 2000})
 
@@ -44,6 +57,10 @@ def test_prediction_input_wrong_type():
 def test_prediction_mandatory_input_missing_business_rules(
     mandatory_features, func_sample
 ):
+    """
+    Vérifie la présence obligatoire de chaque caractéristique métier critique.
+    Teste systématiquement l'absence de l'âge, du genre et du revenu.
+    """
     # On test que la suppr de la feature mandatory_features donne bien une erreur
     payload = func_sample["features"]
     payload.pop(mandatory_features)
@@ -68,6 +85,10 @@ def test_prediction_mandatory_input_missing_business_rules(
 def test_prediction_input_invalid_business_rules(
     invalid_features, expected_error_msg, func_sample
 ):
+    """
+    Valide les contraintes de domaine métier (Custom Validators).
+    Vérifie le rejet des valeurs aberrantes pour l'âge, les heures supp. et le revenu.
+    """
     with pytest.raises(ValidationError) as excinfo:
         payload = func_sample["features"].copy()
         payload.update(invalid_features)
@@ -81,6 +102,7 @@ def test_prediction_input_invalid_business_rules(
 
 # Happy path
 def test_prediction_output_valid():
+    """Vérifie qu'une sortie de prédiction standard respecte le schéma de réponse."""
     out = PredictionOutput(
         prediction=1.0,
         confidence=0.85,
@@ -95,6 +117,7 @@ def test_prediction_output_valid():
 # permettant de tester les deux bornes de confidence
 @pytest.mark.parametrize("confidence", [-0.1, 1.5])
 def test_prediction_output_invalid_confidence(confidence):
+    """Vérifie que le score de confiance est strictement borné entre 0.0 et 1.0."""
     with pytest.raises(ValidationError):
         PredictionOutput(
             prediction=1.0,
@@ -107,6 +130,10 @@ def test_prediction_output_invalid_confidence(confidence):
 # On teste que top_features est bien une liste de tuples (str, float)
 # capable de convertir des données qui ressemblent au type ciblé
 def test_feature_importance_coercion():
+    """
+    Vérifie la capacité de Pydantic à convertir (coercion) des types compatibles.
+    Exemple : conversion d'une chaîne numérique "0.42" en float 0.42.
+    """
     # Ici, on envoie "0.42" au lieu de 0.42
     data = {"top_features": [("age", "0.42")]}
     obj = FeatureImportanceOutput(**data)
@@ -117,6 +144,7 @@ def test_feature_importance_coercion():
 
 
 def test_feature_importance_invalid_structure():
+    """Vérifie que les structures de données complexes (listes de tuples) sont validées."""
     # Test d'une structure corrompue (tuple trop long)
     bad_data = {"top_features": [("age", 0.42, "extra_value")]}
     with pytest.raises(ValidationError):
@@ -127,6 +155,7 @@ def test_feature_importance_invalid_structure():
 # Test de santé pas de précision, on s'attend juste a ce que toutes les
 # données soient présntes et dans avec le bon type
 def test_model_info_output():
+    """Vérifie l'exhaustivité et le typage des métadonnées descriptives du modèle."""
     obj = ModelInfoOutput(
         model_type="CatBoostClassifier",
         n_features=5,
@@ -150,6 +179,7 @@ def test_model_info_output():
 # On garantie que l'erreur est stable et que l'API ne casse pas quand
 # detail est absent
 def test_error_response_optional_detail():
+    """S'assure que le champ 'detail' des erreurs est bien optionnel et n'entraîne pas de crash."""
     err = ErrorResponse(error="Invalid input")
 
     assert err.detail is None

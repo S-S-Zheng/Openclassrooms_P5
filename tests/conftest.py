@@ -1,5 +1,15 @@
 """
-Configuration pytest et fixtures
+Module de configuration globale et de définition des fixtures pour Pytest.
+
+Ce fichier est le pilier de la suite de tests. Il centralise la configuration
+des environnements de test, notamment :
+1. La gestion d'une base de données PostgreSQL de test isolée.
+2. Le mockage du modèle CatBoost et des dépendances système (Pickle, OS).
+3. L'injection de dépendances pour le client de test FastAPI.
+4. La génération de jeux de données fictifs (profils YAML, fichiers CSV temporaires).
+
+L'utilisation de fixtures permet de garantir l'indépendance des tests et la
+reproductibilité des scénarios de succès et d'échec.
 """
 
 import os
@@ -41,6 +51,10 @@ def fake_dict():
 # dict de test partie fonctionnelle
 @pytest.fixture
 def func_sample():
+    """
+    Fournit un dictionnaire complet de caractéristiques valides.
+    Utilisé pour tester les payloads de l'endpoint /predict.
+    """
     return {
         "features": {
             "age": 32,
@@ -70,7 +84,9 @@ def func_sample():
 
 @pytest.fixture(params=["service_unavailable", "value_error", "unexpected_error"])
 def error_responses(request):
-    # On définit un dictionnaire où les clés correspondent aux params
+    """
+    On définit un dictionnaire où les clés correspondent aux params
+    """
     datas = {
         "service_unavailable": {
             "mock_args": {"is_missing": True},
@@ -94,7 +110,9 @@ def error_responses(request):
 # Charge des profils fonctionnels
 @pytest.fixture
 def functionnal_profile(request):
-    """Charge dynamiquement un profil YAML selon le paramètre fourni."""
+    """
+    Charge dynamiquement un profil YAML selon le paramètre fourni.
+    """
     # 'request.param' contiendra le nom du profil (ex: 'happy_path')
     profile_name = request.param
     file_path = Path(__file__).parent / "fixtures" / f"fake_profile_{profile_name}.yml"
@@ -108,6 +126,10 @@ def functionnal_profile(request):
 # fake csv
 @pytest.fixture
 def fake_csv(tmp_path):
+    """
+    Crée un fichier CSV temporaire simulant un dataset historique.
+    Utilisé pour tester les scripts d'importation.
+    """
     # faux chemin avec fichier csv
     fake_file = tmp_path / "hist_datas"
     fake_file.mkdir()
@@ -152,9 +174,25 @@ def ml_model():
     return MLModel()
 
 
-# catboost
+# Utilisé pour tests unitaire en subsituant CBC
 @pytest.fixture
 def mock_catboost(monkeypatch):
+    """
+    Mock de bas niveau ciblant la bibliothèque CatBoostClassifier.
+
+    Cette fixture utilise 'monkeypatch' pour intercepter l'instanciation de
+    CatBoostClassifier au sein du module 'app.ml.model'. Elle permet de tester
+    la logique de la classe 'MLModel' sans nécessiter de fichiers binaires
+    réels ni de calculs matriciels lourds.
+
+    Elle simule les attributs et méthodes critiques :
+    - .feature_names_ : pour la validation des colonnes.
+    - .predict_proba() : pour le calcul des scores de confiance.
+    - .get_feature_importance() : pour l'explicabilité.
+
+    Returns:
+        MagicMock: Une instance simulant un objet CatBoostClassifier pré-entraîné.
+    """
     # create_autospec crée mock exact mêmes méthodes que vrai CatBoost mais
     # Problème avec le nom donc passage a MagicMock(spec=)
     mock_model = MagicMock(spec=CatBoostClassifier)
@@ -181,26 +219,65 @@ def mock_catboost(monkeypatch):
 
 # Client FastAPI
 @pytest.fixture
-def client(db_session_for_tests):
-    # Injection de la session db
-    app.dependency_overrides[get_db] = lambda: db_session_for_tests
-    # Le "with" déclenche le lifespan (startup)
+def client():
+    """
+    Fournit un TestClient FastAPI configuré avec une session de base de données de test.
+    Gère le cycle de vie (lifespan) de l'application pour chaque test.
+    """
+    """
+    Fournit un client HTTP configuré pour tester les endpoints de l'API.
+
+    Cette fixture utilise le 'TestClient' de FastAPI au sein d'un gestionnaire
+    de contexte afin de déclencher les événements 'lifespan' (startup/shutdown).
+    Cela permet notamment au modèle ML d'être chargé en mémoire avant l'exécution
+    des tests.
+
+    Note:
+        L'injection de la base de données n'est plus gérée ici car elle est
+        assurée globalement par la fixture 'override_db'.
+
+    Yields:
+        TestClient: Une instance de client capable d'effectuer des requêtes (GET, POST, etc.).
+    """
     with TestClient(app) as test_client:
-        # Attentio: ce qui est sur la même ligne que yield et envoyée au test
-        # ce qui est différent de ce qui est après la ligne yield qui s'exe à la fin du test
         yield test_client
-    # À la sortie du "with", le lifespan (shutdown) est déclenché
-    app.dependency_overrides.clear()
 
 
-# MLModel
+# MLModel pour tester la relation API/ML
 @pytest.fixture
 def mock_ml_model(func_sample):
+    """
+    Factory de mocks pour simuler différents états du modèle ML au sein de l'application.
+
+    Cette fixture retourne une fonction usine permettant de configurer dynamiquement
+    le comportement du modèle (succès, erreur, ou absence) et de l'injecter
+    directement dans l'état de l'application FastAPI (`app.state.model`).
+
+    Args:
+        func_sample (dict): Fixture fournissant un exemple de features pour
+            calculer les métadonnées de réponse.
+
+    Returns:
+        Callable: Une fonction `_factory` acceptant les paramètres suivants :
+            - is_missing (bool): Si True, simule l'absence totale de modèle chargé.
+            - should_fail (bool): Si True, les méthodes du modèle lèveront une exception.
+            - error_type (str): Type d'erreur à lever ('value' pour ValueError,
+                sinon Exception générique).
+
+    Note:
+        Le mock généré simule l'intégralité de l'interface `MLModel` :
+        - `predict()` : Retourne un tuple (classe, confiance, nom).
+        - `get_feature_importance()` : Retourne une liste de tuples (feature, importance).
+        - `get_model_info()` : Retourne un dictionnaire de métadonnées.
+    """
+
     def _factory(is_missing=False, should_fail=True, error_type="value"):
         mock = MagicMock()
+        # Cas 1 : Simulation du modèle non initialisé (Lifespan défaillant)
         if is_missing:
             app.state.model = None
             return None
+        # Cas 2 : Simulation de pannes durant l'inférence ou l'analyse
         if should_fail:
             error = (
                 ValueError("Modèle non chargé")
@@ -210,6 +287,7 @@ def mock_ml_model(func_sample):
             mock.predict.side_effect = error
             mock.get_feature_importance.side_effect = error
             mock.get_model_info.side_effect = error
+        # Cas 3 : Simulation d'un fonctionnement nominal (Happy Path)
         else:
             features = list(func_sample["features"].keys())
             shap = [0.9, 0.6, 0.55, 0.53, 0.5]
@@ -281,7 +359,10 @@ def TestingSession():
 # Pour eviter de recréer les tables a chaque test les utilisant
 @pytest.fixture(scope="session", autouse=True)
 def init_db_for_tests():
-    """Crée les tables une seule fois pour toute la session de test."""
+    """
+    Fixture de session : Crée les tables au démarrage et les supprime à la fin de la session.
+    Utilisation automatique de la fixture.
+    """
     Base.metadata.create_all(bind=test_engine)
     yield
     # Vide la base db à la fin de la session != rollback()
@@ -290,7 +371,11 @@ def init_db_for_tests():
 
 @pytest.fixture
 def db_session_for_tests():
-    """Fournit une session propre pour chaque test et nettoie après."""
+    """
+    Fournit une session de base de données isolée pour chaque test.
+    Utilise une transaction SQL pour effectuer un rollback systématique à la fin
+    du test, garantissant une base propre pour le test suivant.
+    """
     connection = test_engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
@@ -309,7 +394,14 @@ def db_session_for_tests():
 @pytest.fixture(autouse=True)
 def override_db(db_session_for_tests):
     """
-    emplace get_db par la session de test pour TOUS les tests de ce fichier
+    Assure l'isolation systématique de la base de données pour l'application.
+
+    En utilisant 'autouse=True', cette fixture garantit que n'importe quelle route
+    faisant appel à la dépendance 'get_db' recevra la session de test en cours,
+    évitant ainsi toute écriture accidentelle dans la base de production ou de dev.
+
+    Args:
+        db_session_for_tests: La session SQLAlchemy transactionnelle définie plus haut.
     """
     app.dependency_overrides[get_db] = lambda: db_session_for_tests
     yield
@@ -320,7 +412,8 @@ def override_db(db_session_for_tests):
 @pytest.fixture
 def db_session_broken_for_tests(db_session_for_tests):
     """
-    Mock une session qui crash
+    Simule une panne de base de données (OperationalError).
+    Utilisé pour tester la robustesse des rollbacks et la gestion des erreurs API.
     """
     # Le flush() entrainera un crash
     db_session_for_tests.flush = MagicMock(

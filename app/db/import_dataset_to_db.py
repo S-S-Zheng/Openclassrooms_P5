@@ -1,7 +1,10 @@
 """
-Permet d'importer un fichier de dataset csv dans la base de données.\n
-Vérifie que le dataset n'a jamais été importer dans la base sinon l'ignore.\n
-Peut se lancer en tant que tel.
+Module d'importation de données historiques depuis un fichier CSV vers PostgreSQL.
+
+Ce module permet d'étoffer la base de données avec des datasets pré-existants.
+Il intègre une logique de dédoublonnage par hachage (SHA-256) pour éviter les
+insertions redondantes et assure la traçabilité de l'opération via le système
+de logging applicatif.
 """
 
 # imports
@@ -19,6 +22,28 @@ from app.utils.logger_db import closing_log, init_log
 
 
 def import_csv(file_path: str):
+    """
+    Lit un fichier CSV et importe les enregistrements uniques dans la table PredictionRecord.
+
+    Le processus suit les étapes suivantes :
+    1. Chargement du fichier via Pandas et conversion des NaN en 'None' pour compatibilité JSON.
+    2. Initialisation d'un log d'activité pour l'endpoint virtuel '/import'.
+    3. Pour chaque ligne : extraction de la target, génération d'un hash ID unique sur les features.
+    4. Vérification de l'existence de l'ID en base pour ignorer les doublons.
+    5. Construction et insertion massive (bulk insert) des nouveaux enregistrements.
+
+    Args:
+        file_path (str): Chemin local vers le fichier CSV contenant les données historiques.
+
+    Raises:
+        Exception: En cas d'erreur de lecture, de hachage ou de contrainte d'intégrité SQL,
+            une annulation (rollback) est effectuée.
+
+    Note:
+        - La 'confidence' est fixée à 1.0 car il s'agit de données historiques observées.
+        - Le statut HTTP 201 est loggé en cas de succès avec insertion.
+        - Le statut HTTP 204 est loggé si aucun nouvel enregistrement n'a été trouvé.
+    """
     start_time = time.time()
     df = pd.read_csv(file_path)
     # Remplacer les NaN par None (car NaN n'est pas un JSON valide)

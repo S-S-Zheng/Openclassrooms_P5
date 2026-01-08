@@ -49,6 +49,9 @@ autodoc_default_options = {
     'members': True,
     'member-order': 'bysource',
     'special-members': '__init__',
-    'undoc-members': True,
+    'undoc-members': False,
+    'inherited-members': False,
     'exclude-members': '__weakref__'
 }
+# La ligne magique pour stopper les 1000+ erreurs de SQLAlchemy
+autodoc_typehints = "none"
