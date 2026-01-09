@@ -30,7 +30,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/S-S-Zheng/Openclassrooms_data_scientist_projects.git">
+  <a href="https://github.com/S-S-Zheng/Openclassrooms_P5.git">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
@@ -39,14 +39,14 @@
   <p align="center">
     Projet 5 de la formation d'OpenClassrooms: Data scientist Machine Learning (projet débuté le 08/12/2025)
     <br />
-    <a href="https://github.com/S-S-Zheng/Openclassrooms_data_scientist_projects.git"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/S-S-Zheng/Openclassrooms_P5.git"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/S-S-Zheng/Openclassrooms_data_scientist_projects.git">View Demo</a>
+    <a href="https://github.com/S-S-Zheng/Openclassrooms_P5.git">View Demo</a>
     &middot;
-    <a href="https://github.com/S-S-Zheng/Openclassrooms_data_scientist_projects.git/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://github.com/S-S-Zheng/Openclassrooms_P5.git/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     &middot;
-    <a href="https://github.com/S-S-Zheng/Openclassrooms_data_scientist_projects.git/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+    <a href="https://github.com/S-S-Zheng/Openclassrooms_P5.git/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
 </div>
 
@@ -72,10 +72,8 @@
     <li><a href="#authentication">Authentification</a></li>
     <li><a href="#security">Securité</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contribution</a></li>
     <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Remerciements</a></li>
+    <li><a href="#technical_details">Documentation technique</a></li>
   </ol>
 </details>
 
@@ -178,23 +176,69 @@ Suivez ces instructions pour installer le projet localement et lancer l'API sur 
 
 #### Local
 
-Le projet nécessite Python 3.11+. Nous utilisons Poetry pour la gestion des dépendances et de l'environnement virtuel.
+Le projet nécessite Python 3.11+ et d'une database locale. Il est possible de rester sur Pip ou d'utiliser Poetry pour la gestion des dépendances.
 
-* **Python & Pip**
+* **Pip ou Poetry**
 
 ```bash
+# Vérifier la version python
 python --version
+
 # Si besoin d'installation (Debian/Ubuntu)
 sudo apt update && sudo apt install python3.11 python3-pip
+
+# Ou Poetry
+# curl -sSL https://install.python-poetry.org | python3 -
+# # Ajoutez Poetry à votre PATH si nécessaire, puis vérifiez
+# poetry --version
 ```
 
-* **Poetry (Gestionnaire de dépendances)**
+* **Création d'une base PostgreSQL locale**
 
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
-# Ajoutez Poetry à votre PATH si nécessaire, puis vérifiez
-poetry --version
-```
+  Pour exécuter les tests d'intégration, vous devez disposer d'une instance PostgreSQL locale.
+
+  1. *Installation* :
+
+      ```bash
+      sudo apt install postgresql postgresql-contrib
+      ```
+
+  2. *Accès au terminal psql* :
+
+      ```bash
+      sudo -u postgres psql
+      ```
+
+  3. *Initialisation de la DB* :
+
+      ```sql
+      CREATE DATABASE ml_test_db;
+      CREATE USER test_user WITH PASSWORD 'votre_mot_de_passe';
+      GRANT ALL PRIVILEGES ON DATABASE ml_test_db TO test_user;
+      ```
+
+#### Distant
+
+* **Création d'un dépôt distant GitHub** :
+
+    Créez un compte sur [GitHub](https://github.com/), créez un nouveau dépôt vide et connectez votre projet local :
+
+    ```bash
+    git remote add origin https://github.com/votre-user/votre-projet.git
+    git push -u origin main
+    ```
+
+    Pour les secrets, allez dans Settings > Secrets and variables > Actions pour ajouter vos secrets (HUGGINGFACE_TOKEN, SB_HOST, etc.).
+
+* **Création d'un espace sur Hugging Face**:
+
+    Créez un compte sur Hugging Face, cliquez sur "New Space", choisissez le SDK Docker et un nom pour votre projet.Une fois l'espace créé, dans vos paramètres de profil, créez un "Write Token" pour permettre à GitHub de pousser le code.
+
+    Concernant les secrets, allez dans les paramètres de votre Space, ajoutez les variables d'environnement de votre base de données Supabase pour que l'API puisse s'y connecter au runtime.
+
+* **Création d'une base PostgreSQL Supabase**:
+
+    Créez un compte et un projet sur Supabase puis cliquez sur le bouton Connect sur la barre de tâche supérieure à côté du nom de la base pour récupérez les informations de connexion. A noté que vous pourrez reset votre mot de passe de la base si celui-ci ne vous convient plus dans Project Settings > Database.
 
 * **Création d'une base PostgreSQL locale**
 
@@ -256,24 +300,22 @@ cd Openclassrooms_P5.git
 
 #### Installer l'environnement
 
-Vous pouvez choisir entre Poetry (recommandé) ou un environnement virtuel classique
-
-* **Poetry**:
+* **Pip ou Poetry**:
 
   ```bash
-  poetry install
-  # Activez l'environnement
-  poetry shell
-  ```
+    # Activer l'environnement virtuel
+    python -m venv venv
+    source venv/bin/activate
 
-* **Pip**:
+    # Pip
+    pip install -r requirements-dev.txt
 
-  ```bash
-  python -m venv venv
-  source venv/bin/activate  # Linux/macOS
-  # venv\Scripts\activate   # Windows
-  pip install -r requirements-dev.txt
-  ```
+    # # Poetry
+    # poetry init
+    # poetry add -r requirements-dev.txt
+    # poetry install
+    # poetry shell
+    ```
 
 #### Variables d'environnement
 
@@ -325,7 +367,7 @@ Avant de pousser vos modifications, vérifiez que l'ensemble de la suite de test
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-L'API expose plusieurs points d'entrée pour interagir avec le modèle de prédiction d'attrition :
+L'API expose plusieurs points d'entrée pour interagir avec le modèle de prédiction :
 
 * **Prédiction individuelle** :
   Envoyez un POST sur /predict/ avec les caractéristiques de l'employé.
@@ -482,13 +524,15 @@ Utilisation d'un connection pooler avec chiffrement SSL pour toutes les communic
 <!-- Technical Doc -->
 ##  Documentation Technique Complète
 
-La documentation détaillée des modules Python est générée via Sphinx et est disponible dans le dossier docs/_build/html et générable via:
+La documentation détaillée des modules Python est générée via Sphinx et est disponible dans le dossier docs/build/html et générable via:
 
   ```bash
   # Générer la documentation Sphinx
   cd docs
   make html
   ```
+
+Un pdf "documentation_technique" est fourni avec dans docs/.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -539,7 +583,7 @@ Distributed under the project_license. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- CONTACT -->
+<!-- CONTACT
 ## Contact
 
 Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - <email@email_client.com>
@@ -548,11 +592,13 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- ACKNOWLEDGMENTS -->
+ACKNOWLEDGMENTS
 ## Acknowledgments
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+-->
 
+<!-- =============================================================================== -->
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 

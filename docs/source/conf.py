@@ -24,7 +24,7 @@ extensions = [
     'sphinx.ext.napoleon',     # Supporte le format Google/NumPy
     'sphinx.ext.viewcode',     # Ajoute un lien vers le code source
     'sphinx.ext.githubpages',  # Prépare pour GitHub Pages
-    'myst_parser',             # Permet de lire le README.md
+    # 'myst_parser',             # Permet de lire le README.md
 ]
 
 # Configuration pour le Markdown
@@ -34,7 +34,7 @@ source_suffix = {
 }
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store'] # Ajouter README.md possible
 
 language = 'fr'
 
@@ -53,5 +53,16 @@ autodoc_default_options = {
     'inherited-members': False,
     'exclude-members': '__weakref__'
 }
-# La ligne magique pour stopper les 1000+ erreurs de SQLAlchemy
+# La ligne magique pour stopper les erreurs de SQLAlchemy
 autodoc_typehints = "none"
+
+# Configuration LateX
+latex_documents = [
+    (
+        "index",      # point d’entrée PDF
+        "documentation_technique.tex",    # nom du PDF
+        "Projet 5 - Documentation technique", # Titre (page de garde)
+        "S-S-Zheng", # auteur (page de garde)
+        "manual", # Type de doc (recommendé = manual, howto, report ou book)
+    ),
+]
