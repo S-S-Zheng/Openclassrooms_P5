@@ -240,55 +240,6 @@ sudo apt update && sudo apt install python3.11 python3-pip
 
     Créez un compte et un projet sur Supabase puis cliquez sur le bouton Connect sur la barre de tâche supérieure à côté du nom de la base pour récupérez les informations de connexion. A noté que vous pourrez reset votre mot de passe de la base si celui-ci ne vous convient plus dans Project Settings > Database.
 
-* **Création d'une base PostgreSQL locale**
-
-  Pour exécuter les tests d'intégration, vous devez disposer d'une instance PostgreSQL locale.
-
-  1. *Installation* :
-
-      ```bash
-      sudo apt install postgresql postgresql-contrib
-      ```
-
-  2. *Accès au terminal psql* :
-
-      ```bash
-      sudo -u postgres psql
-      ```
-
-  3. *Initialisation de la DB* :
-
-      ```sql
-      CREATE DATABASE ml_test_db;
-      CREATE USER test_user WITH PASSWORD 'votre_mot_de_passe';
-      GRANT ALL PRIVILEGES ON DATABASE ml_test_db TO test_user;
-      ```
-
-#### Distant
-
-* **Création du dépôt GitHub, de l'interface Hugging Face et de la database Supabase**
-
-  1. *Création d'un dépôt distant GitHub* :
-
-      Créez un compte sur [GitHub](https://github.com/), créez un nouveau dépôt vide et connectez votre projet local :
-
-      ```bash
-      git remote add origin https://github.com/votre-user/votre-projet.git
-      git push -u origin main
-      ```
-
-      Pour les secrets, allez dans Settings > Secrets and variables > Actions pour ajouter vos secrets (HUGGINGFACE_TOKEN, SB_HOST, etc.).
-
-  2. *Création d'un espace sur Hugging Face*:
-
-      Créez un compte sur Hugging Face, cliquez sur "New Space", choisissez le SDK Docker et un nom pour votre projet.Une fois l'espace créé, dans vos paramètres de profil, créez un "Write Token" pour permettre à GitHub de pousser le code.
-
-      Concernant les secrets, allez dans les paramètres de votre Space, ajoutez les variables d'environnement de votre base de données Supabase pour que l'API puisse s'y connecter au runtime.
-
-  3. *Création d'une base PostgreSQL Supabase*:
-
-      Créez un compte et un projet sur Supabase puis cliquez sur le bouton Connect sur la barre de tâche supérieure à côté du nom de la base pour récupérez les informations de connexion. A noté que vous pourrez reset votre mot de passe de la base si celui-ci ne vous convient plus dans Project Settings > Database.
-
 ### Installation & Configuration
 
 #### Cloner le Dépôt
@@ -532,7 +483,7 @@ La documentation détaillée des modules Python est générée via Sphinx et est
   make html
   ```
 
-Un pdf "documentation_technique" est fourni avec dans docs/.
+Un pdf "documentation_technique.pdf" est fourni avec dans docs/.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
